@@ -1,15 +1,17 @@
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
+from main import ask_ai
 
 def send_message():
     user_text = user_input.get()
 
     if user_text.strip() == '':
         return
+    ai_answer = ask_ai(user_text)
 
     chat_history.config(state=NORMAL)
     chat_history.insert(END, f'You: {user_text}\n')
-    chat_history.insert(END, 'AI: Hier kommt später die Antwort von Ollama.\n\n')
+    chat_history.insert(END, f'AI: {ai_answer}\n\n')
 
     chat_history.config(state=DISABLED)
 

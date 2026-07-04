@@ -13,14 +13,3 @@ def ask_ai(prompt):
     )
 
     return response["message"]["content"]
-
-
-question = "Was ist Python?"
-
-answer = ask_ai(question)
-
-print("Frage:")
-print(question)
-
-print("\nAntwort:")
-print(answer)
