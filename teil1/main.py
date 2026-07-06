@@ -2,6 +2,7 @@
 import ollama
 
 # Send a user message to the local Ollama model and return the AI response.
+def ask_ai(promt):
     response = ollama.chat(
         model="llama3.2:3b", #wie heißt model Ollama
         messages=[
