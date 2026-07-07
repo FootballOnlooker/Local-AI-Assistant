@@ -22,4 +22,11 @@ Thumbs.db
 *.log
 
 # Local models or generated files (если будут)
-models/
+
+*.pyc
+
+model/
+*.bin
+*.safetensors
+*.pt
+*.pth

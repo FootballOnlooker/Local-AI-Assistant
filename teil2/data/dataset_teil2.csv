@@ -1,0 +1,121 @@
+﻿text;label
+Wann haben Sie geöffnet?;Anfrage
+Können Sie mir bitte weitere Informationen schicken?;Anfrage
+Ich habe eine Frage zu meiner Bestellung.;Anfrage
+Wie kann ich den Kundenservice erreichen?;Anfrage
+Gibt es dieses Produkt auch in einer anderen Größe?;Anfrage
+Können Sie mir sagen, wann die Lieferung kommt?;Anfrage
+Ich möchte wissen, ob der Artikel verfügbar ist.;Anfrage
+Wie lange dauert die Bearbeitung meiner Anfrage?;Anfrage
+Könnten Sie mir bitte ein Angebot senden?;Anfrage
+Welche Zahlungsmöglichkeiten bieten Sie an?;Anfrage
+Kann ich meine Bestellung noch ändern?;Anfrage
+Wo finde ich meine Kundennummer?;Anfrage
+Ich brauche Hilfe bei der Registrierung.;Anfrage
+Wie kann ich mein Passwort zurücksetzen?;Anfrage
+Haben Sie heute noch einen freien Termin?;Anfrage
+Kann ich das Produkt vor Ort abholen?;Anfrage
+Wie funktioniert die Rücksendung?;Anfrage
+Gibt es eine Garantie auf dieses Produkt?;Anfrage
+Ich möchte mehr über Ihre Leistungen erfahren.;Anfrage
+Können Sie mir die Preise erklären?;Anfrage
+Ist eine Lieferung nach Wien möglich?;Anfrage
+Wie kann ich meine Adresse ändern?;Anfrage
+Kann ich einen Termin verschieben?;Anfrage
+Welche Unterlagen muss ich mitbringen?;Anfrage
+Ich möchte wissen, ob meine Bestellung schon versendet wurde.;Anfrage
+Kann ich telefonisch beraten werden?;Anfrage
+Wie erreiche ich die zuständige Abteilung?;Anfrage
+Gibt es Rabatte für Neukunden?;Anfrage
+Kann ich das Produkt testen?;Anfrage
+Ich habe eine technische Frage zum Gerät.;Anfrage
+Das Produkt ist beschädigt angekommen.;Reklamation
+Meine Bestellung wurde falsch geliefert.;Reklamation
+Der Artikel funktioniert nicht richtig.;Reklamation
+Ich bin mit der Lieferung nicht zufrieden.;Reklamation
+Das Paket war offen, als es angekommen ist.;Reklamation
+Die Ware entspricht nicht der Beschreibung.;Reklamation
+Ich möchte einen defekten Artikel reklamieren.;Reklamation
+Das Gerät startet nicht mehr.;Reklamation
+Die Qualität des Produkts ist sehr schlecht.;Reklamation
+Ein Teil der Bestellung fehlt.;Reklamation
+Ich habe einen falschen Artikel erhalten.;Reklamation
+Die Verpackung war stark beschädigt.;Reklamation
+Das Produkt ist nach kurzer Zeit kaputt gegangen.;Reklamation
+Die Lieferung kam viel zu spät.;Reklamation
+Ich möchte mich über den Service beschweren.;Reklamation
+Der Kundenservice hat mir nicht geholfen.;Reklamation
+Die Farbe des Artikels stimmt nicht.;Reklamation
+Der Artikel hat Kratzer und Gebrauchsspuren.;Reklamation
+Meine Rücksendung wurde nicht bearbeitet.;Reklamation
+Die Bestellung wurde unvollständig geliefert.;Reklamation
+Das Produkt macht ungewöhnliche Geräusche.;Reklamation
+Die Rechnung enthält falsche Positionen.;Reklamation
+Ich habe trotz Zahlung keine Ware erhalten.;Reklamation
+Die Lieferung wurde an die falsche Adresse geschickt.;Reklamation
+Der Artikel ist nicht wie erwartet.;Reklamation
+Ich möchte eine Beschwerde einreichen.;Reklamation
+Das gelieferte Produkt ist beschädigt.;Reklamation
+Die Ware ist unbrauchbar.;Reklamation
+Ich habe ein Problem mit meiner Bestellung.;Reklamation
+Der Service war leider sehr schlecht.;Reklamation
+Ich möchte meine Rechnung erhalten.;Rechnung
+Können Sie mir bitte die Rechnung zusenden?;Rechnung
+Ich habe keine Rechnung bekommen.;Rechnung
+Die Rechnung ist leider falsch.;Rechnung
+Bitte schicken Sie mir eine Kopie der Rechnung.;Rechnung
+Ich benötige die Rechnung für meine Unterlagen.;Rechnung
+Auf der Rechnung fehlt meine Adresse.;Rechnung
+Können Sie die Rechnung korrigieren?;Rechnung
+Ich brauche eine Rechnung mit Mehrwertsteuer.;Rechnung
+Bitte senden Sie mir die Rechnung per E-Mail.;Rechnung
+Die Rechnungsnummer ist nicht korrekt.;Rechnung
+Ich kann meine Rechnung nicht herunterladen.;Rechnung
+Wo finde ich die Rechnung zu meiner Bestellung?;Rechnung
+Bitte ändern Sie die Rechnungsadresse.;Rechnung
+Ich habe eine Frage zur Rechnung.;Rechnung
+Der Betrag auf der Rechnung stimmt nicht.;Rechnung
+Ich brauche eine neue Rechnung.;Rechnung
+Können Sie mir eine Zahlungsbestätigung schicken?;Rechnung
+Ich möchte wissen, ob die Rechnung bezahlt wurde.;Rechnung
+Bitte senden Sie mir eine Rechnungskopie.;Rechnung
+Die Rechnung enthält einen falschen Betrag.;Rechnung
+Ich benötige eine Rechnung für meine Firma.;Rechnung
+Bitte stellen Sie die Rechnung auf meinen Namen aus.;Rechnung
+Ich habe die Rechnung verloren.;Rechnung
+Können Sie mir die offene Rechnung nennen?;Rechnung
+Ich möchte meine Rechnung online ansehen.;Rechnung
+Bitte prüfen Sie meine Rechnung.;Rechnung
+Die Rechnungsadresse muss geändert werden.;Rechnung
+Ich brauche die Rechnung als PDF.;Rechnung
+Bitte schicken Sie mir die Rechnung noch einmal.;Rechnung
+Vielen Dank für Ihre Hilfe.;Sonstiges
+Ich wünsche Ihnen einen schönen Tag.;Sonstiges
+Danke für die schnelle Antwort.;Sonstiges
+Alles hat gut funktioniert.;Sonstiges
+Ich melde mich später noch einmal.;Sonstiges
+Das hat sich bereits erledigt.;Sonstiges
+Vielen Dank für die Informationen.;Sonstiges
+Ich wollte nur kurz Bescheid geben.;Sonstiges
+Schöne Grüße und vielen Dank.;Sonstiges
+Ich bin heute leider nicht erreichbar.;Sonstiges
+Das war nur eine kurze Rückmeldung.;Sonstiges
+Vielen Dank, das passt für mich.;Sonstiges
+Ich bestätige den Termin.;Sonstiges
+Ich habe Ihre Nachricht erhalten.;Sonstiges
+Danke, ich habe alles verstanden.;Sonstiges
+Ich melde mich, wenn ich weitere Fragen habe.;Sonstiges
+Der Termin passt für mich.;Sonstiges
+Ich wünsche Ihnen ein schönes Wochenende.;Sonstiges
+Danke für Ihre Unterstützung.;Sonstiges
+Ich gebe Ihnen morgen Bescheid.;Sonstiges
+Das ist für mich in Ordnung.;Sonstiges
+Ich wollte mich nur kurz bedanken.;Sonstiges
+Bitte ignorieren Sie meine letzte Nachricht.;Sonstiges
+Ich habe mich inzwischen anders entschieden.;Sonstiges
+Danke, das Problem ist gelöst.;Sonstiges
+Ich bin mit dem Ergebnis zufrieden.;Sonstiges
+Ich wollte nur meine Daten aktualisieren.;Sonstiges
+Danke für die freundliche Beratung.;Sonstiges
+Ich bestätige den Erhalt der Nachricht.;Sonstiges
+Bis bald und vielen Dank.;Sonstiges
