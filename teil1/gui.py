@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
-from main import ask_ai
+from chat import ask_ai
+
 
 def send_message():
     user_text = user_input.get()
@@ -12,10 +13,17 @@ def send_message():
     chat_history.config(state=NORMAL)
     chat_history.insert(END, f'You: {user_text}\n')
     chat_history.insert(END, f'AI: {ai_answer}\n\n')
+    chat_history.see(END)
 
     chat_history.config(state=DISABLED)
 
-    user_input.delete(0, END) # Clean user text
+    user_input.delete(0, END)  # Clean user text
+
+
+def clear_chat():
+    chat_history.config(state=NORMAL)
+    chat_history.delete("1.0", END)
+    chat_history.config(state=DISABLED)
 
 
 window = Tk()
@@ -35,26 +43,46 @@ chat_history = ScrolledText(
     wrap=WORD
 )
 
-chat_history.grid(row=1, column=0, columnspan=2)
+chat_history.grid(row=1, column=0, columnspan=2, sticky="nsew")
 chat_history.config(state=DISABLED)
-
+window.grid_rowconfigure(1, weight=1)
+window.grid_columnconfigure(0, weight=1)
 
 user_input = Entry(
     width=50,
     font=("Arial", 12)
 )
-user_input.grid(row=2, column=0, pady=12, sticky="w")
+user_input.grid(row=2, column=0, pady=12, sticky="ew")
 
+
+def paste_text(event=None):
+    try:
+        clipboard_text = window.clipboard_get()
+        user_input.insert(INSERT, clipboard_text)
+    except TclError:
+        pass
+    return "break"
+
+
+user_input.bind("<Control-v>", paste_text)
+user_input.bind("<Control-V>", paste_text)
 send_button = Button(
     text="Senden",
     width=12,
     command=send_message
 )
-
+window.bind("<Return>", lambda event: send_message())
 send_button.grid(row=2, column=1, padx=10)
 
-window.mainloop()
+clear_button = Button(
+    text="Clear Chat",
+    width=12,
+    command=clear_chat
+)
+
+clear_button.grid(row=3, column=0, columnspan=2, pady=5)
+window.minsize(700, 500)
 
 
-
-
+def run_app():
+    window.mainloop()

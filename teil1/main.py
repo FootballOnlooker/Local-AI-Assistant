@@ -1,15 +1,4 @@
-import ollama
+from gui import run_app
 
-
-def ask_ai(prompt):
-    response = ollama.chat(
-        model="llama3.2:3b",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
-
-    return response["message"]["content"]
+if __name__ == '__main__':
+    run_app()
