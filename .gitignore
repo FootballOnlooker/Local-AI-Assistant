@@ -32,3 +32,6 @@ model/
 *.pth
 
 
+teil2/model/
+teil2/logs/
+teil2/checkpoint-*/

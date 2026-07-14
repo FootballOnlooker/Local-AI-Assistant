@@ -16,7 +16,7 @@ from transformers import (
 start_time = time.time()
 
 # 1. Load dataset
-df = pd.read_csv("teil2/data/dataset.csv", sep=";")
+df = pd.read_csv("data/dataset_teil2.csv", sep=';')
 
 print("Dataset loaded:")
 print(df.head())
