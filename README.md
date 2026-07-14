@@ -1,90 +1,175 @@
-# Local AI Chat Assistant
+# 🤖 Local AI Assistant
 
-## Project Description
+A local AI assistant developed in Python consisting of two independent parts:
 
-This project is Part 1 of the AQUA AI project.
+- **Part 1:** Local Chat Assistant using Ollama and Tkinter
+- **Part 2:** Text Classification with DistilBERT (Hugging Face)
 
-It is a local AI chat assistant with a graphical user interface.  
-The application was written in Python and uses Tkinter for the GUI.  
-The AI model runs locally on the computer through Ollama.
-
-The user can enter a message, send it to the local AI model and receive an answer directly in the chat window.
+The project demonstrates both the use of a locally running Large Language Model (LLM) and the fine-tuning of a transformer model for text classification.
 
 ---
 
-## Features
+# 📂 Project Structure
 
-- Local AI chat assistant
-- Python GUI with Tkinter
-- Input field for user messages
-- Send button
-- Send message with Enter
-- Chat history with scrollbar
-- Automatic scrolling to the newest message
-- Clear Chat button
-- Error handling if Ollama or the model is not available
-- Resizable window
+```
+Local-AI-Assistant/
+│
+├── teil1/
+│   ├── gui.py
+│   ├── ollama_client.py
+│   └── ...
+│
+├── teil2/
+│   ├── data/
+│   │   └── dataset.csv
+│   ├── train.py
+│   ├── predict.py
+│   ├── model/
+│   └── ...
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
 
 ---
+
+# 🚀 Part 1 – Local AI Chat Assistant
+
+## Goal
+
+Develop a graphical desktop application that communicates with a locally running Large Language Model via Ollama.
 
 ## Technologies
 
 - Python
 - Tkinter
 - Ollama
-- Llama 3.2 3B
+- Llama 3.1 / Mistral
+
+## Features
+
+- Local AI chatbot
+- Graphical User Interface (GUI)
+- Conversation history
+- Communication via Ollama API
 
 ---
 
-## Project Structure
+# 🧠 Part 2 – Text Classification with DistilBERT
 
-```text
-local-ai-chat-assistant/
-│
-├── main.py          # Starts the application
-├── gui.py           # Graphical User Interface
-├── chat.py          # Communication with Ollama
-├── requirements.txt
-├── README.md
-│
-└── screenshots/
-    ├── app.png
-    └── chat_history.png
+## Goal
+
+Fine-tune a pre-trained transformer model to classify customer messages into four categories.
+
+## Categories
+
+- Anfrage
+- Reklamation
+- Rechnung
+- Sonstiges
+
+---
+
+## Dataset
+
+The dataset was created manually and contains:
+
+- **120 text examples**
+- **4 categories**
+- **30 examples per category**
+
+The dataset is stored as a CSV file.
+
+---
+
+## Technologies
+
+- Python
+- Pandas
+- PyTorch
+- Hugging Face Transformers
+- Hugging Face Datasets
+- Scikit-Learn
+
+---
+
+# ⚙️ Training Process
+
+The training pipeline consists of the following steps:
+
+1. Load the dataset.
+2. Convert category labels into numerical IDs.
+3. Split the dataset into training and test sets.
+4. Convert the data into Hugging Face Dataset format.
+5. Tokenize the text using AutoTokenizer.
+6. Fine-tune DistilBERT.
+7. Evaluate the trained model.
+8. Save the model and tokenizer.
+
+---
+
+# 📊 Training Results
+
+| Parameter | Value |
+|-----------|------|
+| Model | distilbert-base-german-cased |
+| Dataset size | 120 |
+| Classes | 4 |
+| Training samples | 96 |
+| Test samples | 24 |
+| Epochs | 3 |
+| Batch size | 8 |
+| Learning rate | 2e-5 |
+| Training time | ~0.57 min |
+| Test Accuracy | 62.5% |
+
+---
+
+# 🔍 Prediction
+
+After training, the saved model can classify new user messages.
+
+Example:
+
+Input:
+
+```
+Ich brauche meine Rechnung.
+```
+
+Output:
+
+```
+Kategorie: Rechnung
+Confidence: 33.57%
 ```
 
 ---
 
-## Installation
+# 🛠 Installation
 
-### 1. Install Ollama
-
-Download and install Ollama:
-
-```text
-https://ollama.com
-```
-
-### 2. Download the AI model
+Clone the repository:
 
 ```bash
-ollama pull llama3.2:3b
+git clone https://github.com/YOUR_USERNAME/Local-AI-Assistant.git
 ```
 
-### 3. Create a virtual environment
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-### 4. Activate the virtual environment
+Activate it:
 
-Windows:
+Windows
 
 ```bash
 .venv\Scripts\activate
 ```
 
-### 5. Install dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -92,76 +177,66 @@ pip install -r requirements.txt
 
 ---
 
-## Run the Application
+# ▶️ Running the Project
 
-Start the application with:
+### Part 1
+
+Start Ollama:
 
 ```bash
-python main.py
+ollama run llama3.1
 ```
 
-Ollama must be installed and available locally.
+Launch the GUI:
+
+```bash
+python teil1/gui.py
+```
 
 ---
 
-## Screenshots
+### Part 2
 
-### Main Application
+Train the model:
 
-![Local AI Chat Assistant](screenshots/app.png)
+```bash
+python teil2/train.py
+```
 
-### Chat History
+Run prediction:
 
-![Chat History](screenshots/chat_history.png)
-
----
-
-## How It Works
-
-1. The user writes a message in the input field.
-2. The user clicks the Send button or presses Enter.
-3. The GUI calls the function `send_message()`.
-4. `send_message()` sends the text to `ask_ai()`.
-5. `ask_ai()` communicates with the local Ollama model.
-6. The AI answer is returned to the GUI.
-7. The user message and AI answer are displayed in the chat history.
+```bash
+python teil2/predict.py
+```
 
 ---
 
-## Development Progress
+# 📚 Libraries
 
-### Part 1 – Local AI Chat Assistant
-
-- [x] Install Ollama locally
-- [x] Download local AI model
-- [x] Test model in terminal
-- [x] Create Python function for Ollama communication
-- [x] Create Tkinter GUI
-- [x] Add input field
-- [x] Add Send button
-- [x] Add chat history
-- [x] Connect GUI with Ollama
-- [x] Add Enter key support
-- [x] Add Clear Chat button
-- [x] Add error handling
-- [x] Make window resizable
-- [x] Add screenshots
-- [x] Write README
-
-### Part 2 – Small AI Training
-
-- [ ] Create dataset with 100–200 examples
-- [ ] Train a small pretrained model
-- [ ] Evaluate the model
-- [ ] Document training duration, examples, epochs and accuracy
-- [ ] Optional: connect classifier with GUI
+- transformers
+- datasets
+- torch
+- pandas
+- numpy
+- scikit-learn
+- tkinter
+- requests
 
 ---
 
-## Notes
+# 📌 Notes
 
-This project uses a local AI model.  
-No external API key is required.
+This project was created for educational purposes to demonstrate:
 
-The model is not trained in this part.  
-The application only sends user messages to the locally running Ollama model and displays the response.
+- local LLM integration,
+- transformer fine-tuning,
+- natural language processing,
+- text classification using Hugging Face.
+
+Because the dataset is intentionally small (120 examples), the trained model may not correctly classify every unseen sentence. Increasing the dataset size and diversity would improve the overall accuracy.
+
+---
+
+# 📄 License
+
+Educational project.
