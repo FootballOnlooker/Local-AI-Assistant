@@ -1,34 +1,47 @@
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red)
+![Transformers](https://img.shields.io/badge/HuggingFace-Transformers-yellow)
+![License](https://img.shields.io/badge/License-Educational-green)
+
 # 🤖 Local AI Assistant
 
-A local AI assistant developed in Python consisting of two independent parts:
+A local AI assistant developed in Python that combines a local Large Language Model (LLM) with a fine-tuned transformer model for text classification.
 
-- **Part 1:** Local Chat Assistant using Ollama and Tkinter
-- **Part 2:** Text Classification with DistilBERT (Hugging Face)
+The project consists of two connected parts:
 
-The project demonstrates both the use of a locally running Large Language Model (LLM) and the fine-tuning of a transformer model for text classification.
+- **Part 1:** Local AI Chat Assistant using Ollama and Tkinter.
+- **Part 2:** German customer message classification using DistilBERT.
+
+The classifier is integrated into the GUI and automatically predicts the category of every user message before the AI generates its response.
 
 ---
 
 # 📂 Project Structure
 
-```
+```text
 Local-AI-Assistant/
 │
 ├── teil1/
+│   ├── chat.py
 │   ├── gui.py
-│   ├── ollama_client.py
-│   └── ...
+│   └── main.py
 │
 ├── teil2/
 │   ├── data/
-│   │   └── dataset.csv
-│   ├── train.py
-│   ├── predict.py
+│   │   └── dataset_teil2.csv
 │   ├── model/
-│   └── ...
+│   │   └── final_model/
+│   ├── check_dataset.py
+│   ├── classifier.py
+│   ├── predict.py
+│   └── train.py
 │
-├── requirements.txt
+├── images/
+│   ├── teil1_chat.png
+│   └── training_model_teil2.png
+│
 ├── README.md
+├── requirements.txt
 └── .gitignore
 ```
 
@@ -38,21 +51,24 @@ Local-AI-Assistant/
 
 ## Goal
 
-Develop a graphical desktop application that communicates with a locally running Large Language Model via Ollama.
+Develop a desktop AI assistant that communicates with a locally running Large Language Model using Ollama.
 
 ## Technologies
 
 - Python
 - Tkinter
 - Ollama
-- Llama 3.1 / Mistral
+- Llama 3.2:3b
 
 ## Features
 
 - Local AI chatbot
 - Graphical User Interface (GUI)
 - Conversation history
-- Communication via Ollama API
+- Communication with Ollama
+- Automatic text classification
+- Category prediction
+- Confidence score display
 
 ---
 
@@ -60,7 +76,7 @@ Develop a graphical desktop application that communicates with a locally running
 
 ## Goal
 
-Fine-tune a pre-trained transformer model to classify customer messages into four categories.
+Fine-tune a transformer model to classify German customer messages into predefined categories.
 
 ## Categories
 
@@ -73,11 +89,13 @@ Fine-tune a pre-trained transformer model to classify customer messages into fou
 
 ## Dataset
 
-The dataset was created manually and contains:
+The dataset was manually created.
 
-- **120 text examples**
+It contains:
+
+- **200 text examples**
 - **4 categories**
-- **30 examples per category**
+- **50 examples per category**
 
 The dataset is stored as a CSV file.
 
@@ -94,18 +112,19 @@ The dataset is stored as a CSV file.
 
 ---
 
-# ⚙️ Training Process
+# ⚙️ Training Pipeline
 
-The training pipeline consists of the following steps:
+The training process consists of the following steps:
 
 1. Load the dataset.
-2. Convert category labels into numerical IDs.
+2. Encode category labels into numerical IDs.
 3. Split the dataset into training and test sets.
 4. Convert the data into Hugging Face Dataset format.
-5. Tokenize the text using AutoTokenizer.
+5. Tokenize the text.
 6. Fine-tune DistilBERT.
-7. Evaluate the trained model.
-8. Save the model and tokenizer.
+7. Evaluate the model.
+8. Save the trained model.
+9. Save the tokenizer.
 
 ---
 
@@ -114,54 +133,81 @@ The training pipeline consists of the following steps:
 | Parameter | Value |
 |-----------|------|
 | Model | distilbert-base-german-cased |
-| Dataset size | 120 |
+| Dataset size | 200 |
 | Classes | 4 |
-| Training samples | 96 |
-| Test samples | 24 |
+| Training samples | 160 |
+| Test samples | 40 |
 | Epochs | 3 |
 | Batch size | 8 |
 | Learning rate | 2e-5 |
-| Training time | ~0.57 min |
-| Test Accuracy | 62.5% |
+| Training time | ~0.82 min |
+| Evaluation Loss | 0.8794 |
+| Test Accuracy | **87.50 %** |
 
 ---
 
-# 🔍 Prediction
+# 🔍 Prediction Example
 
-After training, the saved model can classify new user messages.
+Input
 
-Example:
-
-Input:
-
-```
-Ich brauche meine Rechnung.
+```text
+Ich habe meine Rechnung nicht erhalten.
 ```
 
-Output:
+Output
 
-```
+```text
 Kategorie: Rechnung
-Confidence: 33.57%
+
+Confidence: 87.50 %
 ```
+
+---
+
+# 🖥 GUI Example
+
+Every user message is automatically classified before the AI generates a response.
+
+Example
+
+```text
+Sie:
+Ich habe meine Rechnung nicht erhalten.
+
+Kategorie:
+Rechnung (87.50 %)
+
+KI:
+Natürlich helfe ich Ihnen.
+Bitte senden Sie mir Ihre Bestellnummer oder Rechnungsnummer,
+damit ich Ihnen weiterhelfen kann.
+```
+
+---
+
+# 💻 Requirements
+
+- Python 3.10+
+- Ollama installed
+- Llama 3.2:3b downloaded locally
 
 ---
 
 # 🛠 Installation
 
-Clone the repository:
+Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Local-AI-Assistant.git
+git clone https://github.com/FootballOnlooker/Local-AI-Assistant.git
 ```
 
-Create a virtual environment:
+Create a virtual environment
 
 ```bash
 python -m venv .venv
 ```
 
-Activate it:
+Activate it
 
 Windows
 
@@ -169,7 +215,7 @@ Windows
 .venv\Scripts\activate
 ```
 
-Install dependencies:
+Install dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -179,31 +225,37 @@ pip install -r requirements.txt
 
 # ▶️ Running the Project
 
-### Part 1
-
-Start Ollama:
+## 1. Download the Ollama model
 
 ```bash
-ollama run llama3.1
-```
-
-Launch the GUI:
-
-```bash
-python teil1/gui.py
+ollama pull llama3.2:3b
 ```
 
 ---
 
-### Part 2
-
-Train the model:
+## 2. Train the classifier
 
 ```bash
 python teil2/train.py
 ```
 
-Run prediction:
+The training process creates
+
+```text
+teil2/model/final_model/
+```
+
+---
+
+## 3. Run the GUI
+
+```bash
+python teil1/main.py
+```
+
+---
+
+## 4. Optional standalone prediction
 
 ```bash
 python teil2/predict.py
@@ -211,7 +263,7 @@ python teil2/predict.py
 
 ---
 
-# 📚 Libraries
+# 📚 Main Libraries
 
 - transformers
 - datasets
@@ -219,24 +271,45 @@ python teil2/predict.py
 - pandas
 - numpy
 - scikit-learn
+- ollama
 - tkinter
-- requests
+
+---
+
+# 📸 Screenshots
+
+## Local AI Chat Assistant
+
+![Local AI Chat Assistant](images/teil1_chat.png)
+
+---
+
+## DistilBERT Training
+
+![DistilBERT Training](images/training_model_teil2.png)
 
 ---
 
 # 📌 Notes
 
-This project was created for educational purposes to demonstrate:
+This project was created for educational purposes.
 
-- local LLM integration,
-- transformer fine-tuning,
-- natural language processing,
-- text classification using Hugging Face.
+It demonstrates:
 
-Because the dataset is intentionally small (120 examples), the trained model may not correctly classify every unseen sentence. Increasing the dataset size and diversity would improve the overall accuracy.
+- Local LLM integration using Ollama
+- Transformer fine-tuning with Hugging Face
+- Text classification using DistilBERT
+- Desktop GUI development with Tkinter
+- Integration of a classifier into a local AI assistant
+
+The classifier is trained on a manually created dataset containing **200 German customer messages**.
+
+Although the achieved accuracy is **87.50%**, the model may still produce incorrect predictions for previously unseen or ambiguous messages.
+
+The displayed confidence score is the highest Softmax probability produced by the classifier. A high confidence value indicates that the model strongly prefers one category over the others, but it does **not** guarantee that the prediction is correct.
 
 ---
 
-# 📄 License
+# 📄 Usage
 
-Educational project.
+This project was created for educational and demonstration purposes.

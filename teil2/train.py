@@ -2,6 +2,8 @@ import time
 import pandas as pd
 import numpy as np
 
+from pathlib import Path
+
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
@@ -13,10 +15,14 @@ from transformers import (
     Trainer,
 )
 
+BASE_DIR = Path(__file__).resolve().parent
+FINAL_MODEL_DIR = BASE_DIR / "model" / "final_model"
 start_time = time.time()
 
 # 1. Load dataset
-df = pd.read_csv("data/dataset_teil2.csv", sep=';')
+DATASET_PATH = BASE_DIR / "data" / "dataset_teil2.csv"
+
+df = pd.read_csv(DATASET_PATH, sep=';')
 
 print("Dataset loaded:")
 print(df.head())
@@ -99,9 +105,9 @@ def compute_metrics(eval_pred):
 
 # 8. Training settings
 training_args = TrainingArguments(
-    output_dir="teil2/model",
+    output_dir="model",
     eval_strategy="epoch",
-    save_strategy="epoch",
+    save_strategy="no",
     learning_rate=2e-5,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
@@ -109,7 +115,7 @@ training_args = TrainingArguments(
     weight_decay=0.01,
     logging_dir="teil2/logs",
     logging_steps=10,
-    load_best_model_at_end=True,
+    load_best_model_at_end=False,
 )
 
 # 9. Trainer
@@ -126,15 +132,24 @@ trainer.train()
 
 # 11. Final evaluation
 results = trainer.evaluate()
-print("Evaluation results:")
-print(results)
 
 # 12. Save model and tokenizer
-trainer.save_model("teil2/model/final_model")
-tokenizer.save_pretrained("teil2/model/final_model")
+trainer.save_model(str(FINAL_MODEL_DIR))
+tokenizer.save_pretrained(str(FINAL_MODEL_DIR))
 
 end_time = time.time()
 training_minutes = round((end_time - start_time) / 60, 2)
+print("Training Summary")
+print("=" * 40)
 
-print(f"Training finished in {training_minutes} minutes.")
-print("Model saved to teil2/model/final_model")
+print(f"Model: {model_name}")
+print(f"Dataset size: {len(df)}")
+print(f"Training samples: {len(train_df)}")
+print(f"Test samples: {len(test_df)}")
+print(f"Epochs: {training_args.num_train_epochs}")
+print(f"Training time: {training_minutes:.2f} min")
+print(f"Evaluation Loss: {results['eval_loss']:.4f}")
+print(f"Test Accuracy: {results['eval_accuracy'] * 100:.2f}%")
+print("Model saved to: teil2/model/final_model")
+
+print("=" * 40)

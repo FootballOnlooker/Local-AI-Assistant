@@ -2,6 +2,8 @@ from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from chat import ask_ai
 
+from teil2.classifier import classify_text
+
 
 def send_message():
     user_text = user_input.get()
@@ -10,9 +12,25 @@ def send_message():
         return
     ai_answer = ask_ai(user_text)
 
+    result, confidence = classify_text(user_text)
+
     chat_history.config(state=NORMAL)
-    chat_history.insert(END, f'You: {user_text}\n')
-    chat_history.insert(END, f'AI: {ai_answer}\n\n')
+
+    chat_history.insert(END, "-" * 50 + "\n\n")
+
+    chat_history.insert(END, "Sie:\n")
+    chat_history.insert(END, f"{user_text}\n\n")
+
+    chat_history.insert(END, "Kategorie:\n")
+    chat_history.insert(
+        END,
+        f"{result} ({confidence:.2f} %)\n\n"
+    )
+
+    chat_history.insert(END, "KI:\n")
+    chat_history.insert(END, f"{ai_answer}\n\n")
+
+    chat_history.insert(END, "-" * 50 + "\n\n")
     chat_history.see(END)
 
     chat_history.config(state=DISABLED)
