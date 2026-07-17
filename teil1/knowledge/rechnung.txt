@@ -1,0 +1,9 @@
+Rechnungen und Zahlungen
+
+Die Rechnung wird nach Abschluss der Bestellung automatisch per E-Mail verschickt.
+
+Kunden sollen auch den Spam-Ordner prüfen, falls die Rechnung nicht im Posteingang zu finden ist.
+
+Eine Kopie der Rechnung kann über den Kundenservice angefordert werden. Dafür werden die Bestellnummer und die bei der Bestellung verwendete E-Mail-Adresse benötigt.
+
+Zahlungen sind per Banküberweisung, Kreditkarte und PayPal möglich.
