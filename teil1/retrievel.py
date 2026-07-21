@@ -9,39 +9,6 @@ KNOWLEDGE_DIR = BASE_DIR / "knowledge"
 MIN_SIMILARITY = 0.05
 
 
-def retrieve_documents(question, documents):
-    print(f'Question: {question}')
-    document_text = [document['text'] for document in documents]
-    vectorizer = TfidfVectorizer(lowercase=True)
-    document_vectors = vectorizer.fit_transform(document_text)
-    question_vector = vectorizer.transform([question])
-
-    feature_names = vectorizer.get_feature_names_out()
-    similarities = cosine_similarity(
-        question_vector,
-        document_vectors,
-    )[0]
-
-    best_index = np.argmax(similarities)
-    best_document = documents[best_index]
-    best_similarity = similarities[best_index]
-
-    if best_similarity < MIN_SIMILARITY:
-        return {
-            "name": None,
-            "text": "",
-            "similarity": best_similarity,
-        }
-
-    for word_index, weight in zip(
-            question_vector.indices,
-            question_vector.data,
-    ):
-        word = feature_names[word_index]
-        print(f"{word}: {weight:.4f}")
-    print(vectorizer)
-
-
 def load_documents():
     """Load all text files from the knowledge directory."""
 
@@ -59,6 +26,47 @@ def load_documents():
             )
 
     return documents
+
+
+def retrieve_documents(question, documents):
+    if not question.strip():
+        return {
+            "name": None,
+            "text": "",
+            "similarity": 0.0,
+        }
+
+    if not documents:
+        return {
+            "name": None,
+            "text": "",
+            "similarity": 0.0,
+        }
+
+    document_text = [document['text'] for document in documents]
+    vectorizer = TfidfVectorizer(lowercase=True)
+    document_vectors = vectorizer.fit_transform(document_text)
+    question_vector = vectorizer.transform([question])
+    similarities = cosine_similarity(
+        question_vector,
+        document_vectors,
+    )[0]
+
+    best_index = int(np.argmax(similarities))
+    best_similarity = float(similarities[best_index])
+
+    if best_similarity < MIN_SIMILARITY:
+        return {
+            "name": None,
+            "text": "",
+            "similarity": best_similarity,
+        }
+    best_document = documents[best_index]
+    return {
+        "name": best_document["name"],
+        "text": best_document["text"],
+        "similarity": best_similarity,
+    }
 
 
 if __name__ == "__main__":
