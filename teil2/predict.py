@@ -1,11 +1,18 @@
 from classifier import classify_text
 
-text = input("Enter text: ").strip()
 
-result, confidence = classify_text(text)
+def main() -> None:
+    text = input("Enter text: ").strip()
 
-if not text:
-    print("Bitte geben Sie einen Text ein.")
-else:
+    if not text:
+        print("Bitte geben Sie einen Text ein.")
+        return
+
+    result, confidence = classify_text(text)
+
     print(f"Kategorie: {result}")
-    print(f"Confidence: {confidence} %")
+    print(f"Confidence: {confidence:.2f} %")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,37 +1,40 @@
-# Virtual Environment
+# Virtual environments
 .venv/
 venv/
 
-# Python
+# Python cache and compiled files
 __pycache__/
 *.py[cod]
-*.pyo
+*$py.class
 
-# IDE
+# IDE settings
 .idea/
 .vscode/
 
-# Environment
+# Environment variables
 .env
+.env.*
 
-# OS
+# Operating system files
 .DS_Store
 Thumbs.db
 
 # Logs
 *.log
+logs/
+teil2/logs/
 
-# Local models or generated files (если будут)
-
-*.pyc
-
+# Trained models and checkpoints
 model/
+teil2/model/
+checkpoint-*/
+teil2/checkpoint-*/
 *.bin
 *.safetensors
 *.pt
 *.pth
 
-
-teil2/model/
-teil2/logs/
-teil2/checkpoint-*/
+# Test and coverage files
+.pytest_cache/
+.coverage
+htmlcov/

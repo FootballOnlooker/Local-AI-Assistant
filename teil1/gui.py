@@ -45,11 +45,11 @@ def clear_chat():
 
 
 window = Tk()
-window.title('Local AI Chat Assistant')
+window.title("Lokaler KI-Kundenservice")
 window.config(padx=30, pady=20)
 
 title_label = Label(
-    text='Local AI Chat Assistant',
+    text="Lokaler KI-Kundenservice",
     font=("Arial", 16, "bold")
 )
 title_label.grid(row=0, column=0, columnspan=2, pady=(0, 10))
@@ -93,7 +93,7 @@ window.bind("<Return>", lambda event: send_message())
 send_button.grid(row=2, column=1, padx=10)
 
 clear_button = Button(
-    text="Clear Chat",
+    text="Chat löschen",
     width=12,
     command=clear_chat
 )
