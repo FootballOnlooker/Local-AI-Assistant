@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
-from chat import ask_ai
+from teil1.chat import ask_ai
 
 from teil2.classifier import classify_text
 

@@ -1,5 +1,5 @@
 import ollama
-from retrieval import load_documents, retrieve_document
+from teil1.retrieval import load_documents, retrieve_document
 
 DOCUMENTS = load_documents()
 
@@ -18,10 +18,17 @@ def ask_ai(question):
         )
 
     prompt = f"""
-    Du bist ein hilfreicher Kundenservice-Assistent.
+    Du bist ein Kundenservice-Assistent.
 
-    Beantworte die Frage ausschließlich anhand des bereitgestellten Kontexts.
-    Erfinde keine zusätzlichen Informationen.
+    Antworte ausschließlich anhand des bereitgestellten Kontexts.
+
+    Wichtige Regeln:
+    - Erfinde keine Informationen.
+    - Erfinde keine E-Mail-Adressen.
+    - Erfinde keine Telefonnummern.
+    - Erfinde keine Fristen.
+    - Wenn die Antwort nicht im Kontext steht, antworte:
+      "Diese Information befindet sich nicht in den bereitgestellten Dokumenten."
 
     Kontext:
     {context}
@@ -41,6 +48,9 @@ def ask_ai(question):
                     "content": prompt,
                 }
             ],
+            options={
+                "temperature": 0,
+            },
         )
 
         return response["message"]["content"]

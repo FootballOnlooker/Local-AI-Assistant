@@ -266,7 +266,7 @@ teil2/model/final_model/
 ### 6. Run the application
 
 ```bash
-python teil1/main.py
+python -m teil1.main
 ```
 
 ## Additional Commands
