@@ -144,6 +144,8 @@ Fine-tune a transformer model to classify German customer messages.
 - `Rechnung`
 - `Sonstiges`
 
+---
+
 ### Dataset
 
 The dataset was created manually and contains:
@@ -153,6 +155,8 @@ The dataset was created manually and contains:
 - 50 examples per category
 - no missing values
 - no duplicate rows
+
+---
 
 ### Training Pipeline
 
@@ -164,6 +168,8 @@ The dataset was created manually and contains:
 6. Fine-tune `distilbert-base-german-cased`.
 7. Evaluate the model on the test set.
 8. Save the model and tokenizer locally.
+
+---
 
 ### Training Results
 
