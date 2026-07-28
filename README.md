@@ -331,10 +331,9 @@ documents.
 
 ## Possible Improvements
 
-- Replace TF-IDF retrieval with multilingual sentence embeddings.
-- Cache TF-IDF document vectors instead of rebuilding them for every query.
 - Expand and diversify the classification dataset.
 - Run model calls in a background thread to keep the GUI responsive.
+- Cache TF-IDF document vectors instead of rebuilding them for every query.
 - Add automated tests for retrieval and classification.
 
 ## Purpose
