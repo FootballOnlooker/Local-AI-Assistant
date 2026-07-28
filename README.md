@@ -6,6 +6,8 @@
 
 # Local AI Assistant
 
+🇩🇪 **Deutsche Version:** [README_DE.md](README_DE.md)
+
 A local desktop AI assistant for German customer-service messages.
 
 The application combines three components:
