@@ -322,7 +322,6 @@ documents.
 ## Limitations
 
 - The classifier is trained on a small manually created dataset.
-- Accuracy on new or ambiguous messages may be lower than the reported test accuracy.
 - The confidence score is the highest Softmax probability and is not a guarantee that the prediction is correct.
 - TF-IDF retrieval relies mainly on shared words and may select an imperfect document for unusual formulations.
 - Ollama and the trained classifier must be available locally before the GUI can run.
