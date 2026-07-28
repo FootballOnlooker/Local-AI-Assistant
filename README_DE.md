@@ -1,3 +1,9 @@
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red)
+![Transformers](https://img.shields.io/badge/HuggingFace-Transformers-yellow)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-black)
+![License](https://img.shields.io/badge/Usage-Educational-green)
+
 # Lokaler KI-Assistent
 
 🇬🇧 **English version:** [README.md](README.md)
