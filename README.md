@@ -74,7 +74,6 @@ Local-AI-Assistant/
 │
 ├── images/
 │   ├── teil1_chat.png
-│   ├── retrieval_example.png
 │   └── training_model_teil2.png
 │
 ├── .gitignore
@@ -166,7 +165,7 @@ The dataset was created manually and contains:
 | Epochs           |                              3 |
 | Batch size       |                              8 |
 | Learning rate    |                         `2e-5` |
-| Training time    |         approximately 0.82 min |
+| Training time    |      appr. 0.82 min = 49.2 sec |
 | Evaluation loss  |                         0.8794 |
 | Test accuracy    |                     **87.50%** |
 
@@ -335,7 +334,6 @@ documents.
 - Replace TF-IDF retrieval with multilingual sentence embeddings.
 - Cache TF-IDF document vectors instead of rebuilding them for every query.
 - Expand and diversify the classification dataset.
-- Add F1 score, a classification report, and a confusion matrix.
 - Run model calls in a background thread to keep the GUI responsive.
 - Add automated tests for retrieval and classification.
 
