@@ -1,9 +1,27 @@
-Lieferung und Versand
+Lieferzeiten
 
-Die normale Lieferzeit beträgt drei bis fünf Werktage.
+Die Transportdauer richtet sich nach der gewählten Verkehrsart und der Distanz
+zwischen Abhol- und Zielort.
 
-Nach dem Versand erhält der Kunde eine Versandbestätigung mit einer Sendungsnummer per E-Mail.
+- Wien nach Graz: in der Regel 1 Werktag (Stückgut und Komplettladung)
+- Wien nach Budapest: in der Regel 1-2 Werktage
+- Wien nach Mailand: in der Regel 2 Werktage
+- Wien nach Lyon: in der Regel 3 Werktage
+- Wien nach Sofia: in der Regel 3-4 Werktage
+- Wien nach Bukarest: in der Regel 3-4 Werktage
 
-Falls eine Bestellung nach sieben Werktagen noch nicht angekommen ist, soll sich der Kunde an den Kundenservice wenden.
+Diese Angaben gelten für Standardtransporte. Bei Sammelgut (LTL) kann sich die
+Laufzeit durch zusätzliche Konsolidierungsstopps um 1 weiteren Werktag
+verlängern. Expresssendungen werden bevorzugt disponiert und treffen in der
+Regel einen halben bis einen ganzen Tag früher ein als im Standardtransport.
 
-Lieferungen sind derzeit nur innerhalb Österreichs möglich.
+Beispiel: Die Sendung GRP-44190 (Ziel: Graz) wurde am Montag abgeholt und ist
+laut Sendungsverfolgung am Dienstagvormittag beim Empfänger eingetroffen.
+
+Zustellungen erfolgen werktags zwischen 08:00 und 17:00 Uhr. Eine
+Wunschzustellzeit kann bei der Buchung hinterlegt werden.
+
+Hinweis: Diese Liste ist nicht vollständig und enthält nur Beispielstrecken.
+Alle Angaben gelten mit Wien als Standardabholort, sofern in der Anfrage
+kein anderer Abholort genannt wurde. Für Ziele, die hier nicht aufgeführt
+sind, liegt keine dokumentierte Lieferzeit vor.

@@ -1,9 +1,18 @@
-Garantie und Gewährleistung
+Haftung und Transportversicherung
 
-Für alle Produkte gilt eine Garantiezeit von zwei Jahren ab dem Kaufdatum.
+Für Transportschäden gilt die gesetzliche Frachtführerhaftung. Zusätzlich
+kann bei Buchung eine erweiterte Transportversicherung abgeschlossen werden,
+die den vollen Warenwert abdeckt.
 
-Für die Bearbeitung eines Garantiefalls benötigen wir die Rechnung oder einen anderen Kaufnachweis.
+- Standardhaftung: begrenzt auf den gesetzlichen Höchstbetrag pro Kilogramm
+  Rohgewicht der beschädigten oder verlorenen Ware.
+- Erweiterte Transportversicherung: deckt den deklarierten Warenwert bis zur
+  vereinbarten Versicherungssumme, Zuschlag abhängig vom Warenwert.
 
-Die Garantie gilt für technische Defekte, die bei normaler Nutzung entstehen. Schäden durch unsachgemäße Verwendung, Stürze oder Flüssigkeiten sind nicht abgedeckt.
+Die Versicherungspolice wird der Auftragsbestätigung als Referenz
+beigefügt (Format: VP-XXXXX, z. B. VP-30987). Ein Schadenfall wird nur auf
+Basis der beim Auftrag hinterlegten Versicherungsart reguliert.
 
-Kunden können einen Garantiefall per E-Mail oder über das Kontaktformular melden.
+Bei Kühlware gilt zusätzlich: Die vereinbarte Kühltemperatur wird während
+des gesamten Transports protokolliert. Abweichungen außerhalb der
+vereinbarten Toleranz gelten automatisch als meldepflichtiger Schadenfall.

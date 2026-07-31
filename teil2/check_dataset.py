@@ -4,7 +4,7 @@ import pandas as pd
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DATASET_PATH = BASE_DIR / "data" / "dataset_teil2.csv"
+DATASET_PATH = BASE_DIR / "data" / "dataset.csv"
 
 
 def check_dataset() -> None:

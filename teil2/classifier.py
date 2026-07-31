@@ -21,7 +21,7 @@ def classify_text(text):
         text,
         padding=True,
         truncation=True,
-        max_length=64,
+        max_length=256,
         return_tensors="pt",
     )
     with torch.no_grad():

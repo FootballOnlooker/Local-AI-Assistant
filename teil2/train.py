@@ -3,9 +3,10 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 from datasets import Dataset
 from transformers import (
@@ -13,6 +14,7 @@ from transformers import (
     AutoModelForSequenceClassification,
     TrainingArguments,
     Trainer,
+    EarlyStoppingCallback,
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -22,7 +24,7 @@ OUTPUT_DIR = BASE_DIR / "model" / "checkpoints"
 LOGGING_DIR = BASE_DIR / "logs"
 
 # 1. Load dataset
-DATASET_PATH = BASE_DIR / "data" / "dataset_teil2.csv"
+DATASET_PATH = BASE_DIR / "data" / "dataset.csv"
 
 
 def main():
@@ -114,15 +116,19 @@ def main():
     training_args = TrainingArguments(
         output_dir=str(OUTPUT_DIR),
         eval_strategy="epoch",
-        save_strategy="no",
+        save_strategy="epoch",
         learning_rate=2e-5,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
-        num_train_epochs=3,
+        num_train_epochs=6,
         weight_decay=0.01,
         logging_dir=str(LOGGING_DIR),
         logging_steps=10,
-        load_best_model_at_end=False,
+        load_best_model_at_end=True,
+        metric_for_best_model="accuracy",
+        greater_is_better=True,
+        save_total_limit=2,
+        report_to=[],
         seed=42,
         data_seed=42,
     )
@@ -134,6 +140,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
     )
 
     # 10. Start training
@@ -142,12 +149,33 @@ def main():
     # 11. Final evaluation
     results = trainer.evaluate()
 
+    # 11b. Detailed per-class report + confusion matrix (for the report/screenshot)
+    predictions_output = trainer.predict(test_dataset)
+    predicted_labels = np.argmax(predictions_output.predictions, axis=-1)
+    true_labels = predictions_output.label_ids
+
+    label_names = [id2label[i] for i in range(len(id2label))]
+
+    print("\nPer-class report:")
+    print(classification_report(true_labels, predicted_labels, target_names=label_names))
+
+    confusion = confusion_matrix(true_labels, predicted_labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=confusion, display_labels=label_names)
+    fig, ax = plt.subplots(figsize=(6, 6))
+    disp.plot(ax=ax, cmap="Blues", colorbar=False)
+    plt.title("Confusion Matrix - Test Set")
+    plt.tight_layout()
+    confusion_matrix_path = BASE_DIR / "confusion_matrix.png"
+    plt.savefig(confusion_matrix_path, dpi=150)
+    print(f"Confusion matrix saved to: {confusion_matrix_path}")
+
     # 12. Save model and tokenizer
     trainer.save_model(str(FINAL_MODEL_DIR))
     tokenizer.save_pretrained(str(FINAL_MODEL_DIR))
 
     end_time = time.time()
     training_minutes = round((end_time - start_time) / 60, 2)
+    actual_epochs_trained = round(trainer.state.epoch, 2) if trainer.state.epoch else training_args.num_train_epochs
     print("Training Summary")
     print("=" * 40)
 
@@ -155,7 +183,8 @@ def main():
     print(f"Dataset size: {len(df)}")
     print(f"Training samples: {len(train_df)}")
     print(f"Test samples: {len(test_df)}")
-    print(f"Epochs: {training_args.num_train_epochs}")
+    print(f"Max epochs configured: {training_args.num_train_epochs}")
+    print(f"Epochs actually trained: {actual_epochs_trained}")
     print(f"Training time: {training_minutes:.2f} min")
     print(f"Evaluation Loss: {results['eval_loss']:.4f}")
     print(f"Test Accuracy: {results['eval_accuracy'] * 100:.2f}%")

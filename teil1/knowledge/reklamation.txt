@@ -1,9 +1,20 @@
-Reklamationen und beschädigte Produkte
+Reklamationen
 
-Beschädigte oder fehlerhafte Produkte müssen innerhalb von vierzehn Tagen nach der Lieferung gemeldet werden.
+Reklamationen (z. B. beschädigte Ware, falsche Lieferadresse, verspätete
+oder verlorene Sendung) können unter Angabe der Sendungsnummer und einer
+kurzen Beschreibung des Problems gemeldet werden.
 
-Für die Bearbeitung einer Reklamation werden die Bestellnummer, eine Beschreibung des Problems und nach Möglichkeit Fotos des Schadens benötigt.
+Ablauf:
+1. Meldung der Reklamation mit Sendungsnummer und
+   Fotodokumentation bei Beschädigung.
+2. Prüfung durch den Kundenservice innerhalb von 2 Werktagen.
+3. Rückmeldung mit Ergebnis der Prüfung und, falls berechtigt, weiterem
+   Vorgehen (Nachlieferung, Gutschrift oder Schadenersatz).
 
-Nach der Prüfung kann das Produkt ersetzt, repariert oder der Kaufpreis zurückerstattet werden.
+Reklamationsfrist: Schäden oder Fehlmengen müssen innerhalb von 7 Tagen nach
+Zustellung gemeldet werden, offensichtliche Transportschäden idealerweise
+bereits bei Übernahme auf dem Lieferschein vermerkt werden.
 
-Das Produkt soll nicht ohne vorherige Rückmeldung des Kundenservice zurückgeschickt werden.
+Beispiel: Die Reklamation zur Sendung REK-91204 (falsche Lieferadresse in
+den Frachtpapieren) wurde erfasst und wird von der zuständigen Disposition
+bearbeitet.

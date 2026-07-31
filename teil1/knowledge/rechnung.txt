@@ -1,9 +1,21 @@
-Rechnungen und Zahlungen
+Rechnungen und Zahlungsbedingungen
 
-Die Rechnung wird nach Abschluss der Bestellung automatisch per E-Mail verschickt.
+Rechnungen werden nach Abschluss des Transports innerhalb von 3 Werktagen
+per E-Mail als PDF verschickt. Die Zahlungsfrist beträgt 14 Tage netto ab
+Rechnungsdatum, sofern im Vertrag nichts anderes vereinbart wurde.
 
-Kunden sollen auch den Spam-Ordner prüfen, falls die Rechnung nicht im Posteingang zu finden ist.
+Jede Rechnung enthält:
+- Rechnungsnummer (Format: RE-JJJJ-XXXX, z. B. RE-2024-1187)
+- Zugehörige Sendungs- bzw. Auftragsnummer (z. B. EXP-70531)
+- UID-Nummer des Auftraggebers, sofern bei der Buchung hinterlegt
+- Aufschlüsselung nach Fracht-, Maut- und Zusatzkosten (z. B. Wartezeit,
+  Zollabwicklung)
 
-Eine Kopie der Rechnung kann über den Kundenservice angefordert werden. Dafür werden die Bestellnummer und die bei der Bestellung verwendete E-Mail-Adresse benötigt.
+Beispiel: Zur Sendung EXP-70531 wurde die Rechnung RE-2024-1187 gestellt.
+Die Zollkosten für Transporte zwischen Wien und Budapest sind im
+Rechnungsbetrag enthalten, sofern die Zollabwicklung im Auftrag beauftragt
+wurde; andernfalls werden sie separat ausgewiesen.
 
-Zahlungen sind per Banküberweisung, Kreditkarte und PayPal möglich.
+Rechnungskopien können jederzeit unter Angabe der Sendungsnummer beim
+Kundenservice angefordert werden. Fehlt die UID-Nummer auf einer Rechnung,
+wird auf Anfrage eine korrigierte Rechnung ausgestellt.
