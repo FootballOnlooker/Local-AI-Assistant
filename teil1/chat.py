@@ -1,7 +1,8 @@
 import ollama
 
 from teil1.retrieval import (
-    encode_documents,
+    chunk_documents,
+    encode_chunks,
     extract_documented_cities,
     find_undocumented_delivery_city,
     load_documents,
@@ -10,10 +11,14 @@ from teil1.retrieval import (
 
 # Wissensdatenbank wird einmalig beim Start geladen.
 DOCUMENTS = load_documents()
-# Embeddings der Dokumente ebenfalls nur einmal berechnen, statt bei jeder
-# einzelnen Chat-Nachricht neu (siehe Diskussion: ansonsten "Loading
-# weights" bei jedem Aufruf, weil sonst auch das Modell neu geladen würde).
-DOCUMENT_VECTORS = encode_documents(DOCUMENTS)
+# Für die Suche werden Dokumente in Absätze (Chunks) aufgeteilt, damit die
+# 128-Token-Grenze des Embedding-Modells keine Inhalte "unsichtbar" macht
+# (siehe ausführlicher Kommentar bei chunk_documents() in retrieval.py).
+# Wird nur einmal beim Start berechnet, nicht bei jeder Chat-Nachricht neu
+# (siehe Diskussion: ansonsten "Loading weights" bei jedem Aufruf, weil
+# sonst auch das Modell neu geladen würde).
+CHUNKS = chunk_documents(DOCUMENTS)
+CHUNK_VECTORS = encode_chunks(CHUNKS)
 # Städte, für die lieferung.txt tatsächlich eine Lieferzeit dokumentiert.
 # Wird für eine deterministische, code-basierte Prüfung genutzt (siehe
 # ask() unten) – zusätzlich zur Anweisung im Prompt, nicht nur anstelle
@@ -69,6 +74,14 @@ Vienna to Budapest usually takes 1-2 business days."
 Nutzer (Deutsch, direkt danach): "Und wie sieht es mit Graz aus?"
 Assistent (Deutsch): "Von Wien nach Graz dauert die Lieferung in der Regel
 1 Werktag."
+
+8. Sprich den Benutzer immer mit der höflichen Anrede "Sie" an, nie mit
+   "du". Dies ist ein professioneller Kundenservice-Kontext.
+
+9. Formatiere Antworten als einfachen Fließtext ohne Markdown (keine
+   Sternchen für Fettschrift, keine nummerierten oder mit Bindestrich
+   eingeleiteten Listen, keine Überschriften). Die Oberfläche zeigt reinen
+   Text an; Markdown-Zeichen erscheinen sonst wörtlich als Sternchen.
 """.strip()
 
 
@@ -149,7 +162,7 @@ class ChatSession:
             return "Bitte geben Sie eine Frage ein."
 
         retrieval_query = self._build_retrieval_query(question)
-        retrieval_result = retrieve_document(retrieval_query, DOCUMENTS, DOCUMENT_VECTORS)
+        retrieval_result = retrieve_document(retrieval_query, DOCUMENTS, CHUNKS, CHUNK_VECTORS)
 
         messages = [
             {

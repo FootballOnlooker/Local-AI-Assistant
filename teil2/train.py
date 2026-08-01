@@ -1,3 +1,4 @@
+import re
 import time
 from pathlib import Path
 
@@ -5,7 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 from datasets import Dataset
@@ -25,6 +26,31 @@ LOGGING_DIR = BASE_DIR / "logs"
 
 # 1. Load dataset
 DATASET_PATH = BASE_DIR / "data" / "dataset.csv"
+
+# Für die Gruppen-Erkennung: Städtenamen und Referenz-Codes werden durch
+# Platzhalter ersetzt, um Vorlagen-Duplikate zu finden (z. B. derselbe Satz
+# nur mit anderer Stadt/anderem Code). Liste bei Bedarf um weitere Städte
+# aus der Wissensdatenbank ergänzen.
+CODE_PATTERN = re.compile(r"\b[a-z]{2,6}-\d[\da-z-]*\b")
+CITY_PATTERN = re.compile(
+    r"\b(wien|graz|budapest|sofia|lyon|linz|münchen|warschau|frankfurt|"
+    r"bukarest|mailand|klagenfurt)\b"
+)
+
+
+def get_template_group(text):
+    """Normalisiert einen Satz, um Vorlagen-Duplikate zu erkennen (z. B.
+    "Meine Sendungsnummer lautet GRP-44190" vs. "...lautet EXP-70531" —
+    gleiche Vorlage, nur der Code ist ausgetauscht).
+
+    Wird als Gruppen-ID für den Split verwendet: Sätze mit derselben
+    Vorlage landen dadurch garantiert komplett in Training ODER Test,
+    nie aufgeteilt auf beide (verhindert Data Leakage durch Templates).
+    """
+    normalized = text.strip().rstrip("?.!").lower()
+    normalized = CODE_PATTERN.sub("<CODE>", normalized)
+    normalized = CITY_PATTERN.sub("<CITY>", normalized)
+    return normalized
 
 
 def main():
@@ -52,13 +78,27 @@ def main():
 
     df["label_id"] = df["label"].map(label2id)
 
-    # 3. Train/Test split
-    train_df, test_df = train_test_split(
-        df,
-        test_size=0.2,
-        random_state=42,
-        stratify=df["label_id"]
+    # 3. Train/Test split (gruppiert nach Satz-Vorlage, siehe get_template_group)
+    df["template_group"] = df["text"].apply(get_template_group)
+
+    unique_templates = df["template_group"].nunique()
+    print(
+        f"\nVorlagen-Check: {len(df)} Beispiele, {unique_templates} "
+        f"eindeutige Vorlagen (nach Ersetzen von Stadt/Code)."
     )
+    if unique_templates < len(df):
+        print(
+            "Hinweis: Es gibt Vorlagen-Duplikate im Datensatz. Der Split "
+            "unten gruppiert danach, damit Varianten derselben Vorlage "
+            "nicht gleichzeitig in Training und Test landen (Data Leakage)."
+        )
+
+    splitter = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
+    train_idx, test_idx = next(
+        splitter.split(df, df["label_id"], groups=df["template_group"])
+    )
+    train_df = df.iloc[train_idx]
+    test_df = df.iloc[test_idx]
 
     # 4. Convert pandas to Hugging Face Dataset
     train_dataset = Dataset.from_pandas(
@@ -99,8 +139,8 @@ def main():
     test_dataset = test_dataset.rename_column("label_id", "labels")
 
     # Remove unnecessary columns
-    train_dataset = train_dataset.remove_columns(["text", "label"])
-    test_dataset = test_dataset.remove_columns(["text", "label"])
+    train_dataset = train_dataset.remove_columns(["text", "label", "template_group"])
+    test_dataset = test_dataset.remove_columns(["text", "label", "template_group"])
 
     train_dataset.set_format("torch")
     test_dataset.set_format("torch")

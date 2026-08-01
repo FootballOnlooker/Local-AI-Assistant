@@ -19,3 +19,9 @@ wurde; andernfalls werden sie separat ausgewiesen.
 Rechnungskopien können jederzeit unter Angabe der Sendungsnummer beim
 Kundenservice angefordert werden. Fehlt die UID-Nummer auf einer Rechnung,
 wird auf Anfrage eine korrigierte Rechnung ausgestellt.
+
+Falls Sie bislang keine Rechnung erhalten haben, prüfen Sie zunächst, ob
+seit Transportabschluss mehr als 3 Werktage vergangen sind. Ist das der
+Fall, kontaktieren Sie den Kundenservice unter Angabe der Sendungsnummer,
+damit die Rechnung erneut zugestellt oder eine Kopie ausgestellt werden
+kann.

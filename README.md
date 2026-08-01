@@ -31,7 +31,7 @@ AI-generated answer based on the local knowledge base.
 - Confidence score based on the highest Softmax probability
 - Local knowledge base stored as text files
 - Hybrid retrieval: exact reference-code matching + multilingual
-  sentence-embedding search (`sentence-transformers`) with cosine similarity
+  sentence-embedding search over document chunks (`sentence-transformers`) with cosine similarity
 - Multi-turn conversation memory and persistent user instructions
   (e.g. "answer in max. 3 sentences from now on")
 - Language-matching: replies in the language of the current message
@@ -51,7 +51,7 @@ User message
     │
     └──► Hybrid retrieval
             ├──► exact reference-code match (regex)         ─┐
-            └──► sentence-embedding search (if no code)     ─┤
+            └──► chunk-level sentence-embedding search        ─┤
                                                               ▼
                                                   most relevant document(s)
                                                               │
@@ -85,7 +85,7 @@ Local-AI-Assistant/
 │
 ├── teil2/
 │   ├── data/
-│   │   └── dataset_teil2.csv
+│   │   └── dataset.csv
 │   ├── model/
 │   │   └── final_model/          # generated after training
 │   ├── check_dataset.py
@@ -132,28 +132,42 @@ extracts any such code from the question and checks for a literal (case-insensit
 documents first. If the same code legitimately appears in more than one document, all matching documents are combined
 into the context, clearly separated, rather than arbitrarily picking the first one found.
 
-**2. Semantic search (sentence embeddings).** If no reference code is found in the question, the app falls back to
-`sentence-transformers` (`paraphrase-multilingual-MiniLM-L12-v2`). Both the model and the document embeddings are
-loaded once at startup, not on every message. Cosine similarity is computed between the question and each document.
+**2. Semantic search over document chunks (sentence embeddings).** If no reference code is found in the question,
+the app falls back to `sentence-transformers` (`paraphrase-multilingual-MiniLM-L12-v2`). Both the model and the
+embeddings are computed once at startup, not on every message.
+
+Documents are **not** embedded as a whole — they are split into paragraph-level chunks first (`chunk_documents()`),
+each chunk embedded separately, and the question is compared against chunks rather than whole documents. This was a
+deliberate fix for a real, measured problem during development: the embedding model has `max_seq_length = 128`
+tokens. Several knowledge documents (100-190 words, i.e. roughly 130-300 tokens after German subword tokenization)
+exceeded that limit, so content near the end of a document was silently truncated and invisible to the embedding —
+regardless of how important it was. Chunking keeps every unit of text safely under the limit (verified: the longest
+chunk in the current knowledge base is ~91 estimated tokens) without shrinking what the LLM ultimately sees — the
+**full** parent document is still returned as context once its best-matching chunk is found.
+
 The retrieval query combines the current question with the last two user messages, so follow-up questions like "how
 long would delivery *there* take?" can still be matched to the right topic without repeating the city name.
 
 ```text
 knowledge documents
-    └──► sentence-transformer document embeddings (computed once at startup)
+    └──► split into paragraph-level chunks (chunk_documents)
+            └──► chunk embeddings (computed once at startup)
 
 user question
     └──► reference code in question?
             ├─ yes ──► exact substring match across documents
-            └─ no  ──► sentence-transformer question embedding
-                            └──► cosine similarity
-                                    └──► best matching document (if above threshold)
+            └─ no  ──► question embedding
+                            └──► cosine similarity vs. chunk embeddings
+                                    └──► best matching chunk
+                                            └──► full parent document returned as context (if above threshold)
 ```
 
-A minimum similarity threshold (`MIN_SIMILARITY = 0.55`) is used for the semantic path — calibrated empirically
-(a clearly relevant question scored ~0.69, an unrelated question ~0.26). If no sufficiently relevant document is
-found and no reference code matched, the application tells the LLM explicitly that no documented information exists,
-instead of letting it invent an answer.
+A minimum similarity threshold (`MIN_SIMILARITY = 0.35`) is used for the semantic path — calibrated on three real
+test questions, not guessed: a question closely matching the document's own wording scored ~0.69; a genuinely
+relevant but differently-phrased question ("I haven't received my invoice" vs. the document's more formal wording)
+scored ~0.41; an unrelated question scored ~0.26. The threshold sits with margin above the irrelevant case and below
+both relevant cases. If no sufficiently relevant chunk is found and no reference code matched, the application tells
+the LLM explicitly that no documented information exists, instead of letting it invent an answer.
 
 As an additional safeguard, the app also runs a small deterministic check: it extracts the cities actually documented
 in `lieferung.txt` and, if a question asks about delivery to a city that isn't listed, adds a short, isolated
@@ -181,13 +195,22 @@ Fine-tune a transformer model to classify German customer messages.
 
 ### Dataset
 
-The dataset was created manually and contains:
+The dataset consists of hand-written sentence templates, each used **exactly once** (verified programmatically at
+the time of creation, not just claimed):
 
-- 200 German text examples
+- 180 German text examples
 - 4 balanced categories
-- 50 examples per category
+- 45 examples per category
 - no missing values
 - no duplicate rows
+- **100% unique templates** — confirmed by normalizing cities/reference codes to placeholders and checking for
+  collisions; there are none
+
+An earlier version of this dataset (800 examples) reused the same sentence structure with only the city or reference
+code swapped, sometimes up to 10 times. That caused a misleadingly perfect 100% test accuracy, because random splits
+could place near-identical sentences on both sides of train/test. `train.py` uses `StratifiedGroupKFold` to guard
+against this structurally regardless of how the dataset is built, and the dataset itself was additionally rewritten
+to be genuinely unique at the source — belt-and-suspenders rather than relying on either fix alone.
 
 ---
 
@@ -195,7 +218,8 @@ The dataset was created manually and contains:
 
 1. Load and validate the CSV dataset.
 2. Convert category names to numerical IDs.
-3. Create a stratified train/test split.
+3. Create a template-group-aware stratified train/test split (`StratifiedGroupKFold`),
+   preventing near-duplicate template variants from leaking between train and test.
 4. Convert the data to Hugging Face Dataset objects.
 5. Tokenize the texts.
 6. Fine-tune `distilbert-base-german-cased`, up to 6 epochs with early stopping
@@ -208,24 +232,45 @@ The dataset was created manually and contains:
 
 ### Training Results
 
-> **Note:** the table below is from an earlier training run and does not yet reflect the current script
-> (early stopping, `report_to=[]`, per-class report, confusion matrix). Re-run `python teil2/train.py` and
-> replace these numbers — including the actual epochs trained (may be less than 6 due to early stopping) and a
-> screenshot of the new `teil2/confusion_matrix.png` and per-class report.
+These results are from the final dataset (180 fully unique examples, `StratifiedGroupKFold` split) — no template
+leakage between train and test. The accuracy is close to the very first exploratory run on a smaller 200-example
+dataset (87.50%), which is a good independent sanity check that the model is genuinely generalizing rather than
+memorizing sentence templates.
 
-| Parameter        |                          Value |
-|------------------|-------------------------------:|
-| Base model       | `distilbert-base-german-cased` |
-| Dataset size     |                            200 |
-| Classes          |                              4 |
-| Training samples |                            160 |
-| Test samples     |                             40 |
-| Epochs           |                              3 |
-| Batch size       |                              8 |
-| Learning rate    |                         `2e-5` |
-| Training time    |      appr. 0.82 min = 49.2 sec |
-| Evaluation loss  |                         0.8794 |
-| Test accuracy    |                     **87.50%** |
+| Parameter                |                          Value |
+|---------------------------|-------------------------------:|
+| Base model                | `distilbert-base-german-cased` |
+| Dataset size               |                             180 |
+| Classes                   |                               4 |
+| Training samples          |                             144 |
+| Test samples               |                              36 |
+| Max epochs configured      |                               6 |
+| Epochs actually trained    |                             6.0 |
+| Batch size                |                               8 |
+| Learning rate              |                          `2e-5` |
+| Training time              |                        2.10 min |
+| Evaluation loss            |                          0.6385 |
+| Test accuracy              |                     **86.11%** |
+
+Results may vary slightly between systems and training runs. See `teil2/confusion_matrix.png` for a visual
+breakdown of which categories get confused with which.
+
+**Per-class report:**
+
+| Category    | Precision | Recall | F1-score | Support |
+|-------------|----------:|-------:|---------:|--------:|
+| Anfrage     |      0.88 |   0.78 |     0.82 |       9 |
+| Reklamation |      0.89 |   0.89 |     0.89 |       9 |
+| Rechnung    |      0.88 |   0.78 |     0.82 |       9 |
+| Sonstiges   |      0.82 |   1.00 |     0.90 |       9 |
+
+`Sonstiges` has perfect recall (every actual `Sonstiges` message was found) but lower precision — confirmed by the
+confusion matrix (`teil2/confusion_matrix.png`): 2 of the `Rechnung`-confusions come from `Anfrage` examples that
+were misclassified as `Sonstiges`, which is the single largest source of error and explains both anomalies at once
+(`Anfrage` recall 7/9, `Sonstiges` precision 9/11). The remaining errors are scattered rather than concentrated:
+`Rechnung` had one example each misclassified as `Anfrage` and as `Reklamation`, and `Reklamation` had one example
+misclassified as `Rechnung`. No category is confused specifically and consistently with another single category —
+`Sonstiges`, being the most semantically diffuse label, is the main attractor for borderline cases.
 
 Results may vary slightly between systems and training runs.
 

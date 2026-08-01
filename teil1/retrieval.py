@@ -12,9 +12,14 @@ KNOWLEDGE_DIR = BASE_DIR / "knowledge"
 # gemeinsame Wörter praktisch bei 0 liegt. Embeddings haben ein höheres
 # "Grundrauschen" (~0.2-0.3 auch bei thematisch unpassenden Sätzen auf
 # derselben Sprache), daher muss der Schwellenwert deutlich höher liegen.
-# Empirisch bestätigt: Sofia-Frage 0.69, Wetter-Frage 0.26 -> 0.55 liegt
-# sauber dazwischen.
-MIN_SIMILARITY = 0.55
+# Kalibrierung mit drei echten Testfragen (empirisch, nicht geraten):
+#   - "Wien nach Sofia" (Frage nah am Dokumentwortlaut):      similarity 0.69
+#   - "Rechnung nicht erhalten" (Frage, umformuliert):        similarity 0.41
+#   - "Wie ist das Wetter" (thematisch irrelevant):            similarity 0.26
+# 0.55 hätte den zweiten (echt relevanten) Fall verworfen. 0.35 liegt mit
+# Sicherheitsabstand über dem irrelevanten Fall (0.26) und unter beiden
+# relevanten Fällen (0.41, 0.69).
+MIN_SIMILARITY = 0.35
 
 # Referenz-Codes (Sendungs-, Rechnungs-, Policennummern, z. B. "EXP-70531",
 # "RE-2024-1187") sind kurze, seltene alphanumerische Tokens. Embeddings
@@ -100,6 +105,66 @@ def encode_documents(documents):
     return MODEL.encode(document_texts)
 
 
+def chunk_documents(documents, min_chunk_words=15):
+    """Teilt jedes Dokument in Absätze für die Embedding-Suche auf.
+
+    Hintergrund (empirisch bestätigt): Das Embedding-Modell hat ein
+    max_seq_length von 128 Tokens. Mehrere Wissensdokumente sind als
+    ganzer Text länger als das (z. B. 170 Wörter -> geschätzt 220+ Token
+    durch deutsche Subword-Tokenisierung). Alles nach der 128-Token-Grenze
+    wurde beim Encodieren des GANZEN Dokuments schlicht abgeschnitten und
+    war für die Suche unsichtbar — unabhängig davon, wie wichtig der Inhalt
+    dort war (z. B. ein neu ergänzter Absatz am Ende einer Datei).
+
+    Lösung: Nicht das ganze Dokument auf einmal encodieren, sondern in
+    kürzere Absätze aufteilen und JEDEN separat encodieren. Sehr kurze
+    Absätze (z. B. nur eine Überschrift) werden mit dem nächsten
+    zusammengeführt, damit jeder Chunk genug Kontext für ein
+    aussagekräftiges Embedding hat. Für die Antwort an das LLM wird
+    trotzdem immer der VOLLSTÄNDIGE Dokumenttext verwendet (full_text) —
+    die Aufteilung betrifft nur die Suche, nicht den Kontext, den das
+    Modell am Ende sieht.
+    """
+    chunks = []
+
+    for document in documents:
+        paragraphs = [p.strip() for p in document["text"].split("\n\n") if p.strip()]
+        buffer = ""
+
+        for paragraph in paragraphs:
+            buffer = f"{buffer} {paragraph}".strip() if buffer else paragraph
+
+            if len(buffer.split()) >= min_chunk_words:
+                chunks.append(
+                    {
+                        "name": document["name"],
+                        "full_text": document["text"],
+                        "chunk_text": buffer,
+                    }
+                )
+                buffer = ""
+
+        if buffer:
+            chunks.append(
+                {
+                    "name": document["name"],
+                    "full_text": document["text"],
+                    "chunk_text": buffer,
+                }
+            )
+
+    return chunks
+
+
+def encode_chunks(chunks):
+    """Berechnet Embeddings für Chunks (Absätze) statt ganzer Dokumente."""
+    if not chunks:
+        return np.empty((0, MODEL.get_embedding_dimension()))
+
+    chunk_texts = [chunk["chunk_text"] for chunk in chunks]
+    return MODEL.encode(chunk_texts)
+
+
 def find_document_by_reference_code(question, documents):
     """Exakter Fallback für Referenz-Codes (Sendungs-, Rechnungs-,
     Policennummern). Wird vor der Embedding-Suche geprüft, weil kurze
@@ -128,8 +193,14 @@ def find_document_by_reference_code(question, documents):
     return found_documents
 
 
-def retrieve_document(question, documents, document_vectors=None):
-    """Return the most relevant knowledge document for a question."""
+def retrieve_document(question, documents, chunks=None, chunk_vectors=None):
+    """Return the most relevant knowledge document for a question.
+
+    Sucht auf Ebene von Absätzen (chunks), nicht ganzen Dokumenten, um die
+    128-Token-Grenze des Embedding-Modells zu umgehen (siehe
+    chunk_documents()). Gibt trotzdem den vollständigen Dokumenttext
+    zurück, damit das LLM den vollen Kontext bekommt.
+    """
     if not question.strip():
         return {
             "name": None,
@@ -155,15 +226,25 @@ def retrieve_document(question, documents, document_vectors=None):
             "exact_match": True,
         }
 
-    if document_vectors is None:
-        # Fallback, falls jemand die Funktion ohne vorberechnete Vektoren
+    if chunks is None:
+        # Fallback, falls jemand die Funktion ohne vorberechnete Chunks
         # aufruft (z. B. beim manuellen Testen über die Kommandozeile).
-        document_vectors = encode_documents(documents)
+        chunks = chunk_documents(documents)
+
+    if not chunks:
+        return {
+            "name": None,
+            "text": "",
+            "similarity": 0.0,
+        }
+
+    if chunk_vectors is None:
+        chunk_vectors = encode_chunks(chunks)
 
     question_vector = MODEL.encode([question])
     similarities = cosine_similarity(
         question_vector,
-        document_vectors,
+        chunk_vectors,
     )[0]
 
     best_index = int(np.argmax(similarities))
@@ -175,23 +256,26 @@ def retrieve_document(question, documents, document_vectors=None):
             "text": "",
             "similarity": best_similarity,
         }
-    best_document = documents[best_index]
+
+    best_chunk = chunks[best_index]
     return {
-        "name": best_document["name"],
-        "text": best_document["text"],
+        "name": best_chunk["name"],
+        "text": best_chunk["full_text"],
         "similarity": best_similarity,
     }
 
 
 if __name__ == "__main__":
     loaded_documents = load_documents()
-    loaded_vectors = encode_documents(loaded_documents)
+    loaded_chunks = chunk_documents(loaded_documents)
+    loaded_chunk_vectors = encode_chunks(loaded_chunks)
 
     question = input("Enter your question: ").strip()
     result = retrieve_document(
         question,
         loaded_documents,
-        loaded_vectors,
+        loaded_chunks,
+        loaded_chunk_vectors,
     )
 
     print("\nRetrieved document:")
