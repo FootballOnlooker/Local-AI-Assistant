@@ -91,20 +91,6 @@ def load_documents():
     return documents
 
 
-def encode_documents(documents):
-    """Compute embeddings for the knowledge base once.
-
-    Die Dokumente ändern sich während der Laufzeit nicht, daher lohnt es
-    sich, ihre Vektoren einmal zu berechnen und wiederzuverwenden, statt sie
-    bei jeder Chat-Nachricht neu zu encodieren.
-    """
-    if not documents:
-        return np.empty((0, MODEL.get_embedding_dimension()))
-
-    document_texts = [document["text"] for document in documents]
-    return MODEL.encode(document_texts)
-
-
 def chunk_documents(documents, min_chunk_words=15):
     """Teilt jedes Dokument in Absätze für die Embedding-Suche auf.
 
