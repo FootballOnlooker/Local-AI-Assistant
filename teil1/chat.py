@@ -1,16 +1,33 @@
+import re
+
 import ollama
 
+from teil1.database import (
+    init_db,
+    load_documents_from_db,
+    log_question,
+    migrate_txt_to_db,
+)
 from teil1.retrieval import (
     chunk_documents,
     encode_chunks,
     extract_documented_cities,
     find_undocumented_delivery_city,
-    load_documents,
     retrieve_document,
 )
 
-# Wissensdatenbank wird einmalig beim Start geladen.
-DOCUMENTS = load_documents()
+# Datenbank beim Start vorbereiten: Tabellen anlegen (falls neu) und die
+# .txt-Dateien einmalig hineinmigrieren (bereits vorhandene Namen werden
+# übersprungen, siehe migrate_txt_to_db()).
+init_db()
+migrate_txt_to_db()
+
+# Wissensdatenbank wird jetzt aus SQLite geladen statt aus Textdateien.
+DOCUMENTS = load_documents_from_db()
+# Für den Fragen-Log brauchen wir später die Datenbank-ID zu einem
+# gefundenen Dokumentnamen. Einmal als Nachschlage-Tabelle aufgebaut,
+# statt bei jeder Nachricht neu zu suchen.
+DOCUMENT_ID_BY_NAME = {document["name"]: document["id"] for document in DOCUMENTS}
 # Für die Suche werden Dokumente in Absätze (Chunks) aufgeteilt, damit die
 # 128-Token-Grenze des Embedding-Modells keine Inhalte "unsichtbar" macht
 # (siehe ausführlicher Kommentar bei chunk_documents() in retrieval.py).
@@ -153,7 +170,15 @@ class ChatSession:
             if message["role"] == "user"
         ][-self.retrieval_context_turns:]
 
-        return " ".join(previous_user_messages + [question])
+        combined = previous_user_messages + [question]
+        # Exakte Wiederholungen entfernen (z. B. wenn derselbe Wortlaut
+        # zweimal hintereinander gefragt wird) – Reihenfolge bleibt
+        # erhalten. dict.fromkeys() nutzt aus, dass Dictionary-Keys seit
+        # Python 3.7 ihre Einfügereihenfolge behalten und Duplikate
+        # automatisch zusammenfallen.
+        deduplicated = list(dict.fromkeys(combined))
+
+        return " ".join(deduplicated)
 
     def ask(self, question):
         question = question.strip()
@@ -212,6 +237,28 @@ class ChatSession:
             )
 
             answer = response["message"]["content"].strip()
+            # Kleine, risikoarme Nachbearbeitung: llama3.2:3b erzeugt
+            # gelegentlich ein isoliertes "Sie." als eigenes Fragment am
+            # Anfang der Antwort (Sprachmodell-Unschärfe, kein Logikfehler).
+            # Wird hier weggeschnitten, ohne Retrieval/Prompt anzufassen.
+            answer = re.sub(r"^Sie\.\s+", "", answer)
+
+            # Zweite Zusatzanforderung: neue Fragen in der Datenbank
+            # protokollieren. Nutzt den Dokumentnamen aus retrieval_result,
+            # um (falls vorhanden) die passende document_id nachzuschlagen.
+            # Bei mehreren Treffern (exakter Code in mehreren Dokumenten,
+            # siehe find_document_by_reference_code) wird der erste
+            # verwendet – für den Log reicht ein Verweis, keine vollständige
+            # Auflistung aller Treffer.
+            matched_name = retrieval_result["name"]
+            first_matched_name = matched_name.split(", ")[0] if matched_name else None
+            document_id = DOCUMENT_ID_BY_NAME.get(first_matched_name)
+            log_question(
+                question_text=question,
+                document_id=document_id,
+                answer_text=answer,
+                was_found=bool(matched_name),
+            )
 
             self.history.append(
                 {

@@ -38,3 +38,6 @@ teil2/checkpoint-*/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Databases
+*.db

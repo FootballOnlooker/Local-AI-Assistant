@@ -4,10 +4,15 @@ Die Transportdauer richtet sich nach der gewählten Verkehrsart und der Distanz
 zwischen Abhol- und Zielort.
 
 - Wien nach Graz: in der Regel 1 Werktag (Stückgut und Komplettladung)
+
 - Wien nach Budapest: in der Regel 1-2 Werktage
+
 - Wien nach Mailand: in der Regel 2 Werktage
+
 - Wien nach Lyon: in der Regel 3 Werktage
+
 - Wien nach Sofia: in der Regel 3-4 Werktage
+
 - Wien nach Bukarest: in der Regel 3-4 Werktage
 
 Diese Angaben gelten für Standardtransporte. Bei Sammelgut (LTL) kann sich die
