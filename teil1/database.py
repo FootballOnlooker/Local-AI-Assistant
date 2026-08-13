@@ -35,25 +35,69 @@ def init_db():
     connection = get_connection()
     connection.execute(
         """
-        CREATE TABLE IF NOT EXISTS documents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            content TEXT NOT NULL
+        CREATE TABLE IF NOT EXISTS documents
+        (
+            id
+            INTEGER
+            PRIMARY
+            KEY
+            AUTOINCREMENT,
+            name
+            TEXT
+            NOT
+            NULL
+            UNIQUE,
+            content
+            TEXT
+            NOT
+            NULL
         )
         """
     )
     connection.execute(
         """
-        CREATE TABLE IF NOT EXISTS questions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question_text TEXT NOT NULL,
-            normalized_text TEXT NOT NULL,
-            document_id INTEGER,
-            answer_text TEXT,
-            was_found_in_kb INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL DEFAULT (datetime('now')),
-            FOREIGN KEY (document_id) REFERENCES documents(id)
+        CREATE TABLE IF NOT EXISTS questions
+        (
+            id
+            INTEGER
+            PRIMARY
+            KEY
+            AUTOINCREMENT,
+            question_text
+            TEXT
+            NOT
+            NULL,
+            normalized_text
+            TEXT
+            NOT
+            NULL,
+            document_id
+            INTEGER,
+            answer_text
+            TEXT,
+            was_found_in_kb
+            INTEGER
+            NOT
+            NULL
+            DEFAULT
+            0,
+            created_at
+            TEXT
+            NOT
+            NULL
+            DEFAULT (
+            datetime
+        (
+            'now'
+        )),
+            FOREIGN KEY
+        (
+            document_id
+        ) REFERENCES documents
+        (
+            id
         )
+            )
         """
     )
     connection.commit()
@@ -89,7 +133,7 @@ def load_documents_from_db():
     weiterfunktionieren.
     """
     connection = get_connection()
-    rows = connection.execute("SELECT id, name, content FROM documents").fetchall()
+    rows = connection.execute("SELECT id, name, content FROM documents").fetchall()  # Fetch all rows
     connection.close()
 
     return [
@@ -141,7 +185,7 @@ def log_question(question_text, document_id, answer_text, was_found):
     connection.execute(
         """
         INSERT INTO questions
-            (question_text, normalized_text, document_id, answer_text, was_found_in_kb)
+        (question_text, normalized_text, document_id, answer_text, was_found_in_kb)
         VALUES (?, ?, ?, ?, ?)
         """,
         (
