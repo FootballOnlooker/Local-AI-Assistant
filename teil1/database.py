@@ -24,6 +24,7 @@ def get_connection():
     """
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
 
@@ -35,74 +36,29 @@ def init_db():
     connection = get_connection()
     connection.execute(
         """
-        CREATE TABLE IF NOT EXISTS documents
-        (
-            id
-            INTEGER
-            PRIMARY
-            KEY
-            AUTOINCREMENT,
-            name
-            TEXT
-            NOT
-            NULL
-            UNIQUE,
-            content
-            TEXT
-            NOT
-            NULL
+        CREATE TABLE IF NOT EXISTS documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            content TEXT NOT NULL
         )
         """
     )
     connection.execute(
         """
-        CREATE TABLE IF NOT EXISTS questions
-        (
-            id
-            INTEGER
-            PRIMARY
-            KEY
-            AUTOINCREMENT,
-            question_text
-            TEXT
-            NOT
-            NULL,
-            normalized_text
-            TEXT
-            NOT
-            NULL,
-            document_id
-            INTEGER,
-            answer_text
-            TEXT,
-            was_found_in_kb
-            INTEGER
-            NOT
-            NULL
-            DEFAULT
-            0,
-            created_at
-            TEXT
-            NOT
-            NULL
-            DEFAULT (
-            datetime
-        (
-            'now'
-        )),
-            FOREIGN KEY
-        (
-            document_id
-        ) REFERENCES documents
-        (
-            id
+        CREATE TABLE IF NOT EXISTS questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_text TEXT NOT NULL,
+            normalized_text TEXT NOT NULL,
+            document_id INTEGER,
+            answer_text TEXT,
+            was_found_in_kb INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (document_id) REFERENCES documents(id)
         )
-            )
         """
     )
     connection.commit()
     connection.close()
-
 
 def migrate_txt_to_db():
     """Einmalige Migration: liest alle .txt-Dateien aus knowledge/ und
