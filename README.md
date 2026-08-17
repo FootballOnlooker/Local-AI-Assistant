@@ -258,6 +258,24 @@ All four responses passed on the first run, without any further code changes: th
 through to the semantic-only path, which stays below the confidence needed to state a specific answer — so the model is
 told explicitly that no documented information exists rather than being left to guess.
 
+### English Language Support
+
+The assistant is supposed to reply in the language of the current message (rule 7 in `SYSTEM_PROMPT`). In testing,
+an English question about content that is only documented in German (`Could you tell me what the extended transport
+insurance covers?`) produced a broken, still-German sentence fragment instead of a coherent English answer — the
+language rule alone was not reliably followed once German document text entered the context.
+
+**Fix:** a lightweight heuristic (`ENGLISH_MARKERS` / `GERMAN_MARKERS` in `teil1/chat.py`) detects when the current
+message looks like English (English function words present, German ones absent) and, only in that case, adds one
+additional, explicit system instruction telling the model to answer exclusively in English and translate the facts
+without changing or adding content. This is a purely prompt-level fix — no changes to retrieval, no translation
+model, no new logic path — just one conditional extra instruction in the prompt sent to Ollama.
+
+**Verification:** the same English question now returns "The extended transport insurance covers the declared value
+of the goods up to the agreed-upon insurance amount. ..." — correct language, grounded in `garantie.txt`. All German
+test questions from both scenarios above were re-checked against the heuristic and correctly do **not** trigger it,
+confirming German behavior is unaffected.
+
 ---
 
 ## Part 2: German Text Classification

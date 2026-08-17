@@ -53,6 +53,21 @@ DOCUMENTED_CITIES = extract_documented_cities(DOCUMENTS)
 # Hintergrund – in Tests nicht zuverlässig genug).
 DELIVERY_TIMES = extract_delivery_times(DOCUMENTS)
 
+# Einfache Heuristik, um eine englische Nutzernachricht zu erkennen: typisch
+# englische Funktionswörter vorhanden, typisch deutsche NICHT. Bewusst
+# konservativ (beide Bedingungen), damit ganz normale deutsche Fragen nicht
+# fälschlich als Englisch erkannt werden. Wird nur für die Extra-Anweisung
+# unten genutzt, ändert an sich nichts an Retrieval/Antwort für Deutsch.
+ENGLISH_MARKERS = re.compile(
+    r"\b(the|is|are|you|could|would|does|what|how|please|cover|covers|"
+    r"delivery|shipment|invoice)\b",
+    re.IGNORECASE,
+)
+GERMAN_MARKERS = re.compile(
+    r"\b(der|die|das|und|ist|sie|wie|für|nach|mit|ein|eine|sind|hoch|lange)\b",
+    re.IGNORECASE,
+)
+
 SYSTEM_PROMPT = """
 Du bist ein zuverlässiger Kundenservice-Assistent.
 
@@ -228,6 +243,29 @@ class ChatSession:
                 "content": SYSTEM_PROMPT,
             },
             ]
+        # Zusätzliche, isolierte Verstärkung von Regel 7 (Sprachanpassung).
+        # Hintergrund: In einem Test antwortete das Modell auf eine
+        # englische Frage mit einem unvollständigen deutschen Satzfragment,
+        # obwohl Regel 7 im SYSTEM_PROMPT das bereits verlangt – reine
+        # Prompt-Anweisung reichte hier nicht, vermutlich weil der
+        # Dokument-Kontext (siehe unten) auf Deutsch ist und das 3B-Modell
+        # beide Sprachen vermischt hat. Bewusst NUR additiv (eine weitere
+        # System-Nachricht) und nur bei erkanntem Englisch – bei deutschen
+        # Fragen ändert sich dadurch nichts an Prompt oder Verhalten.
+        if ENGLISH_MARKERS.search(question) and not GERMAN_MARKERS.search(question):
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "WICHTIG: Die aktuelle Nachricht des Benutzers ist auf "
+                        "Englisch verfasst. Antworte AUSSCHLIESSLICH auf "
+                        "Englisch, auch wenn die Dokumente/Informationen unten "
+                        "auf Deutsch sind. Übersetze die relevanten Fakten "
+                        "korrekt ins Englische, ohne den Inhalt zu verändern "
+                        "oder etwas hinzuzufügen."
+                    ),
+                }
+            )
         # Den Dokument-Kontext nur anhängen, wenn tatsächlich eine Frage
         # gestellt wurde (einfache Heuristik: enthält "?"). Hintergrund:
         # build_context_message() weist das Modell explizit an, zu prüfen,

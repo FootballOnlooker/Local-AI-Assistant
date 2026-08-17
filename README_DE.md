@@ -275,6 +275,27 @@ Alle vier Antworten bestanden im ersten Durchlauf, ohne weitere Codeänderungen:
 „Retrieval" oben) findet echte Codes zuverlässig mit Ähnlichkeit `1,0`, und beim erfundenen Code fällt die Suche korrekt
 auf den rein semantischen Pfad zurück, der unterhalb der Schwelle bleibt, ab der eine konkrete Antwort gegeben würde —
 das Modell wird also ausdrücklich informiert, dass keine dokumentierte Information vorliegt, statt selbst zu raten.
+
+## Englisch-Unterstützung
+
+Der Assistent soll in der Sprache der aktuellen Nachricht antworten (Regel 7 im `SYSTEM_PROMPT`). Im Test führte
+eine englische Frage zu einem Inhalt, der nur auf Deutsch dokumentiert ist (`Could you tell me what the extended
+transport insurance covers?`), zu einem unvollständigen, weiterhin deutschen Satzfragment statt einer zusammenhängenden
+englischen Antwort — die reine Sprachregel wurde nicht zuverlässig befolgt, sobald deutscher Dokumenttext in den
+Kontext kam.
+
+**Fix:** Eine einfache Heuristik (`ENGLISH_MARKERS` / `GERMAN_MARKERS` in `teil1/chat.py`) erkennt, wenn die
+aktuelle Nachricht nach Englisch aussieht (englische Funktionswörter vorhanden, deutsche NICHT), und ergänzt nur in
+diesem Fall eine zusätzliche, explizite Systemanweisung, die das Modell anweist, ausschließlich auf Englisch zu
+antworten und die Fakten korrekt zu übersetzen, ohne Inhalte zu verändern oder hinzuzufügen. Das ist eine rein
+prompt-basierte Lösung — keine Änderung am Retrieval, kein Übersetzungsmodell, kein neuer Logikpfad, nur eine
+zusätzliche bedingte Anweisung im Prompt an Ollama.
+
+**Verifikation:** Dieselbe englische Frage liefert jetzt "The extended transport insurance covers the declared value
+of the goods up to the agreed-upon insurance amount. ..." — korrekte Sprache, inhaltlich auf `garantie.txt`
+gestützt. Alle deutschen Testfragen aus beiden Szenarien oben wurden erneut gegen die Heuristik geprüft und lösen
+sie korrekt **nicht** aus — das deutsche Verhalten bleibt unverändert.
+
 ---
 
 # Teil 2 – Deutsche Textklassifikation

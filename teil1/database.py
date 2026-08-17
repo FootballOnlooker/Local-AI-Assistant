@@ -124,7 +124,7 @@ def question_exists(question_text):
     row = connection.execute(
         "SELECT id FROM questions WHERE normalized_text = ?",
         (normalized,),
-    ).fetchone()
+    ).fetchone() # Fetch one
     connection.close()
 
     return row is not None
