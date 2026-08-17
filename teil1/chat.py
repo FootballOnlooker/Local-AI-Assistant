@@ -14,6 +14,8 @@ from teil1.retrieval import (
     extract_documented_cities,
     find_undocumented_delivery_city,
     retrieve_document,
+    extract_delivery_times,
+    find_mentioned_documented_city
 )
 
 # Datenbank beim Start vorbereiten: Tabellen anlegen (falls neu) und die
@@ -42,6 +44,14 @@ CHUNK_VECTORS = encode_chunks(CHUNKS)
 # davon, weil reine Prompt-Anweisungen bei diesem konkreten Fall in
 # Tests nicht zuverlässig genug eingehalten wurden.
 DOCUMENTED_CITIES = extract_documented_cities(DOCUMENTS)
+# Stadt -> dokumentierte Lieferzeit (z. B. "Budapest" -> "in der Regel
+# 1-2 Werktage"). Gegenstück zu DOCUMENTED_CITIES: wird genutzt, um bei
+# einer Folgefrage zu einer WOHL dokumentierten Stadt die exakte Angabe
+# deterministisch ins Prompt zu geben, statt sich darauf zu verlassen,
+# dass das LLM sie selbst im vollständigen Dokumenttext wiederfindet
+# (siehe find_mentioned_documented_city() in retrieval.py für den
+# Hintergrund – in Tests nicht zuverlässig genug).
+DELIVERY_TIMES = extract_delivery_times(DOCUMENTS)
 
 SYSTEM_PROMPT = """
 Du bist ein zuverlässiger Kundenservice-Assistent.
@@ -129,7 +139,11 @@ def build_context_message(retrieval_result):
             "Beantworte die aktuelle Frage des Benutzers auf Grundlage dieses "
             "Dokuments und der bisher im Gespräch genannten Informationen. "
             "Übernimm keine Zahlen oder Fakten, die weder im Dokument noch im "
-            "bisherigen Gespräch stehen.\n\n"
+            "bisherigen Gespräch stehen. Ergänze die Antwort auch NICHT um "
+            "eigene erklärende Zusätze, Begründungen oder Einschränkungen "
+            "(z. B. ob etwas Standard/optional ist, wovon etwas abhängt), "
+            "wenn das nicht wortwörtlich im Dokument steht – im Zweifel "
+            "lieber kürzer antworten als etwas Plausibles hinzuzudichten.\n\n"
             "Wichtig: Dieses Dokument ist nur thematisch relevant, es muss die "
             "konkret gefragte Angabe (z. B. eine bestimmte Stadt, Sendungs- oder "
             "Rechnungsnummer) nicht enthalten. Prüfe explizit, ob der genaue "
@@ -153,7 +167,7 @@ def build_context_message(retrieval_result):
 
 
 class ChatSession:
-    def __init__(self, max_history_messages=20, retrieval_context_turns=2):
+    def __init__(self, max_history_messages=20, retrieval_context_turns=6):
         self.history = []
         self.max_history_messages = max_history_messages
         # Wie viele vorherige Benutzer-Nachrichten zusätzlich zur aktuellen
@@ -186,25 +200,91 @@ class ChatSession:
         if not question:
             return "Bitte geben Sie eine Frage ein."
 
-        retrieval_query = self._build_retrieval_query(question)
-        retrieval_result = retrieve_document(retrieval_query, DOCUMENTS, CHUNKS, CHUNK_VECTORS)
+        # Erst mit der AKTUELLEN Frage allein suchen (ohne Gesprächsverlauf).
+        # Hintergrund: Ein Test zeigte, dass das Kombinieren mit älteren
+        # Nachrichten (siehe _build_retrieval_query()) eine klar erkennbare
+        # aktuelle Frage verfälschen kann – z. B. zog "Sendungsnummer
+        # EXP-88213" aus einer früheren Nachricht die Suche für eine
+        # spätere, eindeutig anders gelagerte Frage zur Standardhaftung
+        # fälschlich zu rechnung.txt (das selbst ein ähnliches Beispiel
+        # "EXP-70531" enthält), obwohl garantie.txt eindeutig gepasst hätte.
+        # Der Gesprächsverlauf wird nur noch als Fallback verwendet, wenn
+        # die aktuelle Frage allein NICHTS Passendes findet (z. B. bei
+        # "Wie lange dauert der Transport dorthin?", wo "dorthin" ohne
+        # Kontext keinen Anhaltspunkt bietet).
+        retrieval_result = retrieve_document(question, DOCUMENTS, CHUNKS, CHUNK_VECTORS)
+        if not retrieval_result["name"]:
+            retrieval_query = self._build_retrieval_query(question)
+            retrieval_result = retrieve_document(retrieval_query, DOCUMENTS, CHUNKS, CHUNK_VECTORS)
+        print(
+            f"[retrieval] Frage: {question!r} -> Dokument: "
+            f"{retrieval_result['name']!r}, "
+            f"Ähnlichkeit: {retrieval_result.get('similarity')}"
+        )
 
         messages = [
             {
                 "role": "system",
                 "content": SYSTEM_PROMPT,
             },
-            {
-                "role": "system",
-                "content": build_context_message(retrieval_result),
-            },
+            ]
+        # Den Dokument-Kontext nur anhängen, wenn tatsächlich eine Frage
+        # gestellt wurde (einfache Heuristik: enthält "?"). Hintergrund:
+        # build_context_message() weist das Modell explizit an, zu prüfen,
+        # ob ein konkreter Wert im Dokument steht und andernfalls klar zu
+        # sagen, dass keine dokumentierte Angabe vorliegt – das kollidiert
+        # mit Regel 6 im SYSTEM_PROMPT, wenn der Nutzer gar nichts gefragt,
+        # sondern nur Informationen mitgeteilt hat (z. B. "Mein Zielort ist
+        # Budapest."). In einem Test führte genau das dazu, dass auf eine
+        # reine Mitteilung mit "keine Informationen zur Lieferzeit" reagiert
+        # wurde, obwohl gar keine Frage dazu gestellt war.
+        is_question = "?" in question
+        if is_question:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": build_context_message(retrieval_result),
+                }
+            )
+        else:
+            # Explizite Verstärkung von Regel 6 für genau diesen Fall,
+            # analog zu den Stadt-Prüfungen weiter unten: reines Vertrauen
+            # auf die allgemeine Regel im SYSTEM_PROMPT reichte in einem
+            # Test nicht – statt einer kurzen Bestätigung stellte das
+            # Modell eine rhetorische Rückfrage ("...möchten Sie wissen,
+            # wie lange...?"), was Regel 6 ("ohne Rückfrage bestätigen")
+            # ebenfalls nicht ganz trifft.
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "Der Nutzer hat gerade nur Informationen mitgeteilt "
+                        "(keine Frage gestellt, kein '?'). Bestätige dies in "
+                        "GENAU EINEM kurzen Aussagesatz, freundlich und ohne "
+                        "Rückfrage. Formuliere KEINE Frage zurück an den "
+                        "Nutzer und sprich nicht über fehlende Dokumentation "
+                        "oder Lieferzeiten, solange nicht danach gefragt wurde."
+                    ),
+                }
+            )
+        # Für die beiden Stadt-Prüfungen unten bewusst NICHT retrieval_query
+        # (begrenztes Fenster, siehe retrieval_context_turns) verwenden,
+        # sondern den kompletten bisherigen Gesprächsverlauf: Ein reiner
+        # Text-Abgleich auf Stadtnamen verwässert nicht dadurch, dass man
+        # ihm mehr Text gibt (anders als die Embedding-Suche), daher kann
+        # er ruhig auch eine Stadt finden, die mehrere Nachrichten zuvor
+        # genannt wurde (z. B. "dorthin" als Folgefrage).
+        previous_user_messages_full = [
+            message["content"]
+            for message in self.history
+            if message["role"] == "user"
         ]
-
+        all_user_text = " ".join(previous_user_messages_full + [question])
         # Zusätzliche, code-garantierte Prüfung (unabhängig davon, ob das
         # LLM die allgemeine Anweisung im Prompt befolgt): Wird eine Stadt
         # genannt, die nachweislich NICHT in lieferung.txt steht, bekommt
         # das Modell eine kurze, isolierte Extra-Anweisung dazu.
-        undocumented_city = find_undocumented_delivery_city(question, DOCUMENTED_CITIES)
+        undocumented_city = find_undocumented_delivery_city(all_user_text, DOCUMENTED_CITIES)
         if undocumented_city:
             messages.append(
                 {
@@ -215,6 +295,46 @@ class ChatSession:
                         "Nenne für diese Stadt keine Anzahl an Werktagen oder "
                         "Tagen, auch nicht als Schätzung. Sag ausdrücklich, "
                         "dass dazu keine dokumentierte Angabe existiert."
+                    ),
+                }
+            )
+
+        # Gegenstück: Wurde eine Stadt genannt, für die es SEHR WOHL eine
+        # dokumentierte Lieferzeit gibt (evtl. schon vor mehreren
+        # Nachrichten), wird die exakte Angabe hier explizit mitgegeben.
+        # Hintergrund: In Tests hat llama3.2:3b diese Angabe nicht
+        # zuverlässig selbst im vollständigen Dokumenttext gefunden und
+        # stattdessen fälschlich behauptet, es gäbe keine dokumentierte
+        # Lieferzeit für die Stadt.
+        #
+        # Bewusst nur ausgelöst, wenn die AKTUELLE Frage überhaupt nach
+        # Dauer/Lieferzeit klingt (nicht bei jeder bloßen Erwähnung der
+        # Stadt, siehe all_user_text oben) – sonst feuert der Block z. B.
+        # schon, wenn der Nutzer nur seinen Zielort nennt, ohne etwas zu
+        # fragen (Regel 6 im SYSTEM_PROMPT), und vermischt sich unnötig
+        # mit der Retrieval-Einschätzung aus build_context_message().
+        asks_about_duration = bool(
+            re.search(r"lange|dauer|wann|werktag|tage\b", question, re.IGNORECASE)
+        )
+        documented_city, documented_delivery_time = (
+            find_mentioned_documented_city(all_user_text, DELIVERY_TIMES)
+            if asks_about_duration
+            else (None, None)
+        )
+        if documented_city:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        f"WICHTIG, hat Vorrang vor allen anderen Angaben oben: "
+                        f"Für '{documented_city}' liegt in der Wissensdatenbank "
+                        f"eine dokumentierte Lieferzeit vor: Wien nach "
+                        f"{documented_city}: {documented_delivery_time} Antworte "
+                        f"auf die aktuelle Frage nach der Lieferzeit/Dauer nach "
+                        f"'{documented_city}' NUR mit genau dieser Angabe. "
+                        f"Ignoriere jeden gegenteiligen Hinweis oben, dass dazu "
+                        f"keine oder keine spezifische Information vorliege – "
+                        f"das gilt für '{documented_city}' NICHT."
                     ),
                 }
             )
@@ -250,7 +370,7 @@ class ChatSession:
             # siehe find_document_by_reference_code) wird der erste
             # verwendet – für den Log reicht ein Verweis, keine vollständige
             # Auflistung aller Treffer.
-            matched_name = retrieval_result["name"]
+            matched_name = retrieval_result["name"] if is_question else None
             first_matched_name = matched_name.split(", ")[0] if matched_name else None
             document_id = DOCUMENT_ID_BY_NAME.get(first_matched_name)
             log_question(

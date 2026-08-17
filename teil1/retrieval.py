@@ -72,6 +72,52 @@ def find_undocumented_delivery_city(question, documented_cities):
     return None
 
 
+def extract_delivery_times(documents):
+    """Wie extract_documented_cities(), aber zusätzlich mit der jeweils
+    dokumentierten Lieferzeit als Text (z. B. "Graz" -> "in der Regel
+    1 Werktag (Stückgut und Komplettladung)").
+
+    Wird von find_mentioned_documented_city() genutzt, um bei einer
+    dokumentierten Stadt die exakte Angabe deterministisch ins Prompt zu
+    geben. Grund: In Tests hat llama3.2:3b die Zeile "Wien nach Budapest:
+    ..." innerhalb des vollständigen Dokumenttexts nicht zuverlässig
+    gefunden und stattdessen behauptet, es gäbe keine dokumentierte Angabe
+    – obwohl sie da war. Dasselbe Prinzip wie find_undocumented_delivery_city()
+    oben, nur für den umgekehrten Fall (Stadt IST dokumentiert).
+    """
+    delivery_times = {}
+    route_pattern = re.compile(r"Wien nach ([A-ZÄÖÜ][a-zäöüß]+):\s*(.+)")
+
+    for document in documents:
+        if document["name"] == "lieferung.txt":
+            for city, description in route_pattern.findall(document["text"]):
+                delivery_times[city] = description.strip()
+
+    return delivery_times
+
+
+def find_mentioned_documented_city(text, delivery_times):
+    """Sucht in einem beliebigen Text nach einer der in delivery_times
+    bekannten Städte (ganzes Wort). Gibt (Stadt, Lieferzeit-Text) zurück,
+    sonst (None, None).
+
+    Bewusst NICHT auf das Muster "nach STADT" beschränkt (anders als
+    find_undocumented_delivery_city oben) und bewusst für den GESAMTEN
+    bisherigen Gesprächsverlauf gedacht, nicht nur die aktuelle Frage:
+    Die Stadt kann in einer früheren Nachricht in beliebiger Formulierung
+    genannt worden sein (z. B. "Der Zielort ist Budapest"), und eine
+    spätere Folgefrage nutzt dann nur noch "dorthin". Ein reiner
+    Text-Abgleich verwässert – anders als eine Embedding-Suche – nicht
+    dadurch, dass man ihm mehr Text gibt, daher ist hier kein begrenztes
+    Fenster nötig.
+    """
+    for city, description in delivery_times.items():
+        if re.search(rf"\b{re.escape(city)}\b", text):
+            return city, description
+
+    return None, None
+
+
 def load_documents():
     """Load all text files from the knowledge directory."""
 
