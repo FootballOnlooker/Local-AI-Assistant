@@ -18,9 +18,8 @@ from teil1.retrieval import (
     find_mentioned_documented_city
 )
 
-# Datenbank beim Start vorbereiten: Tabellen anlegen (falls neu) und die
-# .txt-Dateien einmalig hineinmigrieren (bereits vorhandene Namen werden
-# übersprungen, siehe migrate_txt_to_db()).
+# Datenbank vorbereiten: Tabellen anlegen und .txt-Dateien einmalig
+# hineinmigrieren.
 init_db()
 migrate_txt_to_db()
 
@@ -30,19 +29,11 @@ DOCUMENTS = load_documents_from_db()
 # gefundenen Dokumentnamen. Einmal als Nachschlage-Tabelle aufgebaut,
 # statt bei jeder Nachricht neu zu suchen.
 DOCUMENT_ID_BY_NAME = {document["name"]: document["id"] for document in DOCUMENTS}
-# Für die Suche werden Dokumente in Absätze (Chunks) aufgeteilt, damit die
-# 128-Token-Grenze des Embedding-Modells keine Inhalte "unsichtbar" macht
-# (siehe ausführlicher Kommentar bei chunk_documents() in retrieval.py).
-# Wird nur einmal beim Start berechnet, nicht bei jeder Chat-Nachricht neu
-# (siehe Diskussion: ansonsten "Loading weights" bei jedem Aufruf, weil
-# sonst auch das Modell neu geladen würde).
+# Dokumente in Chunks aufteilen (siehe chunk_documents() in retrieval.py),
+# einmal beim Start berechnet statt bei jeder Nachricht neu.
 CHUNKS = chunk_documents(DOCUMENTS)
 CHUNK_VECTORS = encode_chunks(CHUNKS)
-# Städte, für die lieferung.txt tatsächlich eine Lieferzeit dokumentiert.
-# Wird für eine deterministische, code-basierte Prüfung genutzt (siehe
-# ask() unten) – zusätzlich zur Anweisung im Prompt, nicht nur anstelle
-# davon, weil reine Prompt-Anweisungen bei diesem konkreten Fall in
-# Tests nicht zuverlässig genug eingehalten wurden.
+# Für die deterministischen Stadt-Prüfungen in ask() unten.
 DOCUMENTED_CITIES = extract_documented_cities(DOCUMENTS)
 # Stadt -> dokumentierte Lieferzeit (z. B. "Budapest" -> "in der Regel
 # 1-2 Werktage"). Gegenstück zu DOCUMENTED_CITIES: wird genutzt, um bei
@@ -53,11 +44,9 @@ DOCUMENTED_CITIES = extract_documented_cities(DOCUMENTS)
 # Hintergrund – in Tests nicht zuverlässig genug).
 DELIVERY_TIMES = extract_delivery_times(DOCUMENTS)
 
-# Einfache Heuristik, um eine englische Nutzernachricht zu erkennen: typisch
-# englische Funktionswörter vorhanden, typisch deutsche NICHT. Bewusst
-# konservativ (beide Bedingungen), damit ganz normale deutsche Fragen nicht
-# fälschlich als Englisch erkannt werden. Wird nur für die Extra-Anweisung
-# unten genutzt, ändert an sich nichts an Retrieval/Antwort für Deutsch.
+# Einfache Heuristik für "ist die Nachricht Englisch?": englische
+# Funktionswörter vorhanden, deutsche nicht. Nur für die Extra-Anweisung
+# unten genutzt, ändert nichts am Verhalten für Deutsch.
 ENGLISH_MARKERS = re.compile(
     r"\b(the|is|are|you|could|would|does|what|how|please|cover|covers|"
     r"delivery|shipment|invoice)\b",
@@ -185,11 +174,11 @@ class ChatSession:
     def __init__(self, max_history_messages=20, retrieval_context_turns=6):
         self.history = []
         self.max_history_messages = max_history_messages
-        # Wie viele vorherige Benutzer-Nachrichten zusätzlich zur aktuellen
-        # Frage für die Dokumentensuche verwendet werden. Das hilft bei
-        # Folgefragen wie "Wie lange dauert der Transport dorthin?", bei
-        # denen das eigentliche Thema (z. B. "Lieferung") erst durch den
-        # Gesprächsverlauf klar wird.
+        # Fenster für die EMBEDDING-Dokumentensuche, bewusst klein: ein
+        # größeres Fenster verwässerte in Tests die Trefferqualität für
+        # andere Themen im Fenster. Die Stadt-Prüfungen weiter unten in
+        # ask() nutzen bewusst NICHT dieses Fenster, sondern die volle
+        # Konversation (siehe all_user_text dort).
         self.retrieval_context_turns = retrieval_context_turns
 
     def _build_retrieval_query(self, question):
@@ -200,11 +189,7 @@ class ChatSession:
         ][-self.retrieval_context_turns:]
 
         combined = previous_user_messages + [question]
-        # Exakte Wiederholungen entfernen (z. B. wenn derselbe Wortlaut
-        # zweimal hintereinander gefragt wird) – Reihenfolge bleibt
-        # erhalten. dict.fromkeys() nutzt aus, dass Dictionary-Keys seit
-        # Python 3.7 ihre Einfügereihenfolge behalten und Duplikate
-        # automatisch zusammenfallen.
+        # Exakte Wiederholungen entfernen, Reihenfolge bleibt erhalten.
         deduplicated = list(dict.fromkeys(combined))
 
         return " ".join(deduplicated)
@@ -215,22 +200,16 @@ class ChatSession:
         if not question:
             return "Bitte geben Sie eine Frage ein."
 
-        # Erst mit der AKTUELLEN Frage allein suchen (ohne Gesprächsverlauf).
-        # Hintergrund: Ein Test zeigte, dass das Kombinieren mit älteren
-        # Nachrichten (siehe _build_retrieval_query()) eine klar erkennbare
-        # aktuelle Frage verfälschen kann – z. B. zog "Sendungsnummer
-        # EXP-88213" aus einer früheren Nachricht die Suche für eine
-        # spätere, eindeutig anders gelagerte Frage zur Standardhaftung
-        # fälschlich zu rechnung.txt (das selbst ein ähnliches Beispiel
-        # "EXP-70531" enthält), obwohl garantie.txt eindeutig gepasst hätte.
-        # Der Gesprächsverlauf wird nur noch als Fallback verwendet, wenn
-        # die aktuelle Frage allein NICHTS Passendes findet (z. B. bei
-        # "Wie lange dauert der Transport dorthin?", wo "dorthin" ohne
-        # Kontext keinen Anhaltspunkt bietet).
+        # Erst mit der aktuellen Frage allein suchen; die History wird nur
+        # als Fallback verwendet, falls das nichts findet (z. B. "dorthin"
+        # ohne Kontext). Verhindert, dass eine ältere Nachricht eine klar
+        # anders gelagerte aktuelle Frage verfälscht.
         retrieval_result = retrieve_document(question, DOCUMENTS, CHUNKS, CHUNK_VECTORS)
         if not retrieval_result["name"]:
             retrieval_query = self._build_retrieval_query(question)
             retrieval_result = retrieve_document(retrieval_query, DOCUMENTS, CHUNKS, CHUNK_VECTORS)
+        # Diagnose-Ausgabe: zeigt, welches Dokument (falls überhaupt eines)
+        # gefunden wurde. Rein informativ, beeinflusst die Antwort nicht.
         print(
             f"[retrieval] Frage: {question!r} -> Dokument: "
             f"{retrieval_result['name']!r}, "
@@ -243,15 +222,9 @@ class ChatSession:
                 "content": SYSTEM_PROMPT,
             },
             ]
-        # Zusätzliche, isolierte Verstärkung von Regel 7 (Sprachanpassung).
-        # Hintergrund: In einem Test antwortete das Modell auf eine
-        # englische Frage mit einem unvollständigen deutschen Satzfragment,
-        # obwohl Regel 7 im SYSTEM_PROMPT das bereits verlangt – reine
-        # Prompt-Anweisung reichte hier nicht, vermutlich weil der
-        # Dokument-Kontext (siehe unten) auf Deutsch ist und das 3B-Modell
-        # beide Sprachen vermischt hat. Bewusst NUR additiv (eine weitere
-        # System-Nachricht) und nur bei erkanntem Englisch – bei deutschen
-        # Fragen ändert sich dadurch nichts an Prompt oder Verhalten.
+        # Regel 7 (Sprache) zusätzlich verstärken, wenn die Frage Englisch
+        # aussieht — reine Prompt-Anweisung reichte dafür nicht immer aus,
+        # besonders wenn der Dokument-Kontext unten auf Deutsch ist.
         if ENGLISH_MARKERS.search(question) and not GERMAN_MARKERS.search(question):
             messages.append(
                 {
@@ -266,16 +239,9 @@ class ChatSession:
                     ),
                 }
             )
-        # Den Dokument-Kontext nur anhängen, wenn tatsächlich eine Frage
-        # gestellt wurde (einfache Heuristik: enthält "?"). Hintergrund:
-        # build_context_message() weist das Modell explizit an, zu prüfen,
-        # ob ein konkreter Wert im Dokument steht und andernfalls klar zu
-        # sagen, dass keine dokumentierte Angabe vorliegt – das kollidiert
-        # mit Regel 6 im SYSTEM_PROMPT, wenn der Nutzer gar nichts gefragt,
-        # sondern nur Informationen mitgeteilt hat (z. B. "Mein Zielort ist
-        # Budapest."). In einem Test führte genau das dazu, dass auf eine
-        # reine Mitteilung mit "keine Informationen zur Lieferzeit" reagiert
-        # wurde, obwohl gar keine Frage dazu gestellt war.
+        # Dokument-Kontext nur bei einer echten Frage ("?") anhängen —
+        # sonst kollidiert build_context_message() mit Regel 6, wenn der
+        # Nutzer nur Informationen mitteilt statt zu fragen.
         is_question = "?" in question
         if is_question:
             messages.append(
@@ -285,13 +251,8 @@ class ChatSession:
                 }
             )
         else:
-            # Explizite Verstärkung von Regel 6 für genau diesen Fall,
-            # analog zu den Stadt-Prüfungen weiter unten: reines Vertrauen
-            # auf die allgemeine Regel im SYSTEM_PROMPT reichte in einem
-            # Test nicht – statt einer kurzen Bestätigung stellte das
-            # Modell eine rhetorische Rückfrage ("...möchten Sie wissen,
-            # wie lange...?"), was Regel 6 ("ohne Rückfrage bestätigen")
-            # ebenfalls nicht ganz trifft.
+            # Regel 6 zusätzlich verstärken: kurze Bestätigung ohne
+            # Rückfrage, statt über fehlende Dokumentation zu sprechen.
             messages.append(
                 {
                     "role": "system",
@@ -305,23 +266,18 @@ class ChatSession:
                     ),
                 }
             )
-        # Für die beiden Stadt-Prüfungen unten bewusst NICHT retrieval_query
-        # (begrenztes Fenster, siehe retrieval_context_turns) verwenden,
-        # sondern den kompletten bisherigen Gesprächsverlauf: Ein reiner
-        # Text-Abgleich auf Stadtnamen verwässert nicht dadurch, dass man
-        # ihm mehr Text gibt (anders als die Embedding-Suche), daher kann
-        # er ruhig auch eine Stadt finden, die mehrere Nachrichten zuvor
-        # genannt wurde (z. B. "dorthin" als Folgefrage).
+        # Für die beiden Stadt-Prüfungen unten bewusst die volle
+        # Konversation nutzen, nicht das begrenzte
+        # retrieval_context_turns-Fenster — reiner Textabgleich verwässert
+        # nicht wie eine Embedding-Suche.
         previous_user_messages_full = [
             message["content"]
             for message in self.history
             if message["role"] == "user"
         ]
         all_user_text = " ".join(previous_user_messages_full + [question])
-        # Zusätzliche, code-garantierte Prüfung (unabhängig davon, ob das
-        # LLM die allgemeine Anweisung im Prompt befolgt): Wird eine Stadt
-        # genannt, die nachweislich NICHT in lieferung.txt steht, bekommt
-        # das Modell eine kurze, isolierte Extra-Anweisung dazu.
+        # Deterministische Prüfung: undokumentierte Stadt -> explizite
+        # Anweisung, keine Lieferzeit dafür zu erfinden.
         undocumented_city = find_undocumented_delivery_city(all_user_text, DOCUMENTED_CITIES)
         if undocumented_city:
             messages.append(
@@ -337,20 +293,11 @@ class ChatSession:
                 }
             )
 
-        # Gegenstück: Wurde eine Stadt genannt, für die es SEHR WOHL eine
-        # dokumentierte Lieferzeit gibt (evtl. schon vor mehreren
-        # Nachrichten), wird die exakte Angabe hier explizit mitgegeben.
-        # Hintergrund: In Tests hat llama3.2:3b diese Angabe nicht
-        # zuverlässig selbst im vollständigen Dokumenttext gefunden und
-        # stattdessen fälschlich behauptet, es gäbe keine dokumentierte
-        # Lieferzeit für die Stadt.
-        #
-        # Bewusst nur ausgelöst, wenn die AKTUELLE Frage überhaupt nach
-        # Dauer/Lieferzeit klingt (nicht bei jeder bloßen Erwähnung der
-        # Stadt, siehe all_user_text oben) – sonst feuert der Block z. B.
-        # schon, wenn der Nutzer nur seinen Zielort nennt, ohne etwas zu
-        # fragen (Regel 6 im SYSTEM_PROMPT), und vermischt sich unnötig
-        # mit der Retrieval-Einschätzung aus build_context_message().
+        # Gegenstück: dokumentierte Stadt -> exakte Lieferzeit explizit
+        # mitgeben, statt sich auf das LLM zu verlassen, das die Angabe im
+        # vollständigen Dokumenttext nicht immer zuverlässig fand. Nur bei
+        # einer Frage nach Dauer ausgelöst, sonst vermischt es sich mit
+        # Regel 6 bei reinen Mitteilungen.
         asks_about_duration = bool(
             re.search(r"lange|dauer|wann|werktag|tage\b", question, re.IGNORECASE)
         )
@@ -395,19 +342,15 @@ class ChatSession:
             )
 
             answer = response["message"]["content"].strip()
-            # Kleine, risikoarme Nachbearbeitung: llama3.2:3b erzeugt
-            # gelegentlich ein isoliertes "Sie." als eigenes Fragment am
-            # Anfang der Antwort (Sprachmodell-Unschärfe, kein Logikfehler).
-            # Wird hier weggeschnitten, ohne Retrieval/Prompt anzufassen.
+            # llama3.2:3b erzeugt gelegentlich ein isoliertes "Sie." am
+            # Anfang der Antwort; wird hier entfernt.
             answer = re.sub(r"^Sie\.\s+", "", answer)
 
-            # Zweite Zusatzanforderung: neue Fragen in der Datenbank
-            # protokollieren. Nutzt den Dokumentnamen aus retrieval_result,
-            # um (falls vorhanden) die passende document_id nachzuschlagen.
-            # Bei mehreren Treffern (exakter Code in mehreren Dokumenten,
-            # siehe find_document_by_reference_code) wird der erste
-            # verwendet – für den Log reicht ein Verweis, keine vollständige
-            # Auflistung aller Treffer.
+            # Frage protokollieren (siehe log_question() in database.py).
+            # document_id nur setzen, wenn das Dokument auch wirklich in
+            # der Antwort verwendet wurde (is_question) — sonst würde ein
+            # rein lexikalischer Zufallstreffer von retrieve_document()
+            # fälschlich im Log erscheinen.
             matched_name = retrieval_result["name"] if is_question else None
             first_matched_name = matched_name.split(", ")[0] if matched_name else None
             document_id = DOCUMENT_ID_BY_NAME.get(first_matched_name)

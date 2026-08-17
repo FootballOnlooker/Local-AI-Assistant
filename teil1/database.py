@@ -1,13 +1,12 @@
 """SQLite-Anbindung für die Wissensdatenbank.
 
-Ersetzt die bisherige Datenquelle (teil1/knowledge/*.txt) durch eine
-richtige Datenbank, und protokolliert neue, bisher unbekannte Fragen der
-Nutzer – beide Anforderungen aus der Zusatzaufgabe.
+Ersetzt teil1/knowledge/*.txt als Datenquelle und protokolliert neue,
+noch unbekannte Nutzerfragen.
 
 Tabellen:
-- documents: die ehemaligen .txt-Dateien, jetzt als Zeilen in der DB
-- questions: jede vom Nutzer gestellte Frage, mit Verweis auf das
-  gefundene Dokument (falls eines gefunden wurde) und der gegebenen Antwort
+- documents: die früheren .txt-Dateien, jetzt als Zeilen in der DB
+- questions: jede gestellte Frage, mit Verweis auf das gefundene
+  Dokument (falls vorhanden) und die gegebene Antwort
 """
 
 import re
@@ -20,8 +19,8 @@ KNOWLEDGE_DIR = BASE_DIR / "knowledge"
 
 
 def get_connection():
-    """Öffnet eine Verbindung zur SQLite-Datei
-    """
+    """Öffnet eine SQLite-Verbindung. PRAGMA foreign_keys=ON, weil
+    SQLite Fremdschlüssel sonst standardmäßig nicht prüft. """
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
@@ -61,11 +60,9 @@ def init_db():
     connection.close()
 
 def migrate_txt_to_db():
-    """Einmalige Migration: liest alle .txt-Dateien aus knowledge/ und
-    fügt sie in die documents-Tabelle ein. INSERT OR IGNORE zusammen mit
-    UNIQUE auf 'name' sorgt dafür, dass beim erneuten Programmstart keine
-    Duplikate entstehen – bereits vorhandene Namen werden übersprungen.
-    """
+    """Überträgt einmalig die .txt-Dateien in die documents-Tabelle.
+    INSERT OR IGNORE + UNIQUE auf 'name' verhindert Duplikate bei
+    erneutem Programmstart."""
     connection = get_connection()
 
     for file_path in sorted(KNOWLEDGE_DIR.glob("*.txt")):
@@ -82,11 +79,9 @@ def migrate_txt_to_db():
 
 
 def load_documents_from_db():
-    """Ersetzt das alte load_documents() aus retrieval.py, das die
-    Textdateien direkt gelesen hat. Gibt dieselbe Struktur zurück
-    ({"name": ..., "text": ...}, jetzt zusätzlich mit "id"), damit
-    chunk_documents() und der Rest von retrieval.py unverändert
-    weiterfunktionieren.
+    """Ersetzt das alte load_documents() aus retrieval.py. Gleiche
+    Struktur ({"name", "text"}, jetzt zusätzlich "id"), damit der Rest
+    von retrieval.py unverändert weiterfunktioniert.
     """
     connection = get_connection()
     rows = connection.execute("SELECT id, name, content FROM documents").fetchall()  # Fetch all rows
@@ -99,12 +94,9 @@ def load_documents_from_db():
 
 
 def normalize_question(text):
-    """Entfernt Satzzeichen und vereinheitlicht Groß-/Kleinschreibung,
-    damit z. B. 'Wie lange dauert die Lieferung?' und
-    'wie lange dauert die lieferung' als dieselbe Frage erkannt werden.
-    Gleiches Prinzip wie get_template_group() in teil2/train.py, hier
-    aber ohne Platzhalter für Stadt/Code – nur für den reinen
-    Duplikat-Check bei Fragen gedacht.
+    """Kleinschreibung + ohne Satzzeichen, damit z. B. 'Wie lange
+    dauert die Lieferung?' und 'wie lange dauert die lieferung' als
+    derselbe Vergleichswert erkannt werden.
     """
     normalized = text.strip().lower()
     normalized = re.sub(r"[^\w\s]", "", normalized)
@@ -112,11 +104,8 @@ def normalize_question(text):
 
 
 def question_exists(question_text):
-    """Prüft per exaktem Abgleich der normalisierten Frage, ob sie schon
-    in der Datenbank steht. Bewusst einfach gehalten (kein
-    Embedding-Vergleich) – für eine robustere, semantische Prüfung könnte
-    hier dieselbe sentence-transformers-Logik wie in retrieval.py
-    verwendet werden (Ähnlichkeit statt exaktem Abgleich).
+    """Prüft per exaktem Abgleich des normalisierten Texts, ob die
+    Frage schon in der Datenbank steht.
     """
     normalized = normalize_question(question_text)
 
